@@ -1,0 +1,17 @@
+language: node_js
+node_js:
+  - lts/*
+install:
+  - npm ci
+script:
+  - npm run build
+deploy:
+  provider: pages
+  skip_cleanup: true
+  local_dir: dist
+  # Travis가 리포지터리에 Push 할 수 있도록 GitHub에서 $GITHUB_TOKEN을 생성합니다.
+  # 생성한 $GITHUB_TOKEN의 값은 Travis 설정 페이지에서 환경 변수로 지정해 사용할 수 있어요.
+  github_token: $GITHUB_TOKEN
+  keep_history: true
+  on:
+    branch: main
