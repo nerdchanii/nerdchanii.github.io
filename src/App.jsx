@@ -1,14 +1,22 @@
-import { useState } from "react";
-import logo from "./logo.svg";
+import React from "react";
 import "./App.css";
+import { BrowserRouter } from "react-router-dom";
+import RoutePages from "./pages/RoutePages";
+import Nav from "./layout/Nav";
+import Headers from "./layout/Headers";
+import Title from "./layout/Title";
 
 function App() {
-  const [count, setCount] = useState(0);
-
   return (
-    <div className="App">
-      <h1>TEST</h1>
-    </div>
+    <BrowserRouter>
+      <div className="App">
+        <Headers>
+          <Title />
+          <Nav />
+        </Headers>
+        <RoutePages></RoutePages>
+      </div>
+    </BrowserRouter>
   );
 }
 
