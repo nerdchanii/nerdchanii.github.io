@@ -8,8 +8,8 @@ function About() {
     <div>
       <PageTitle title="About me" />
       <Card
-        title="Hello, I'm a front-end developer"
-        text="I am a full stack developer with a passion for learning and building things that help people. I have a background in business and finance, but I am also a self-taught developer. I am currently working on a full-stack web application for a local business. I am looking for a position where I can utilize my skills and experience to help others."
+        title="Hello!🧑🏻‍💻 I'm a front-end developer"
+        text={text}
         img={profile}
       />
     </div>
@@ -17,3 +17,6 @@ function About() {
 }
 
 export default About;
+
+const text = `프론트 엔드 개발자 김예찬입니다.
+개발자로서 세상을 보다 살기좋고 행복한 곳으로 만들고 싶습니다.`;

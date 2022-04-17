@@ -26,6 +26,8 @@ const styles = {
   header: {
     marginBottom: "2vh",
     width: "100%",
+    fontSize: "1.5rem",
+    color: "#209020",
   },
   article: {
     display: "flex",
@@ -42,7 +44,7 @@ const styles = {
   sectionContainer: {
     display: "flex",
     flexDirection: "row",
-    justifyContent: "center",
+    justifyContent: "space-between",
     alignItems: "center",
     height: "30vh",
 
