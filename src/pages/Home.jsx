@@ -1,10 +1,10 @@
 import React from "react";
 import PageTitle from "../layout/PageTitle";
-
+import Three from "../components/Three";
 function Home() {
   return (
     <div>
-      <PageTitle title="Home" />
+      <Three />
     </div>
   );
 }

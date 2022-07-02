@@ -1,6 +1,12 @@
 
 .header{
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  width: 100%;
   font-size: 1.5vw;
+  height: 5vh;
   display: flex;
   justify-content: space-between;
   align-items: center;

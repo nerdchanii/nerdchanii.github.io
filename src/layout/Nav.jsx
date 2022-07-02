@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import "./layout.scss";
-function Sidebar() {
+function Nav() {
   return (
     <nav className="navigate-bar">
       <Link to="/about">About</Link>
@@ -11,4 +11,4 @@ function Sidebar() {
   );
 }
 
-export default Sidebar;
+export default Nav;
