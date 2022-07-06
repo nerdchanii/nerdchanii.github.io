@@ -10,10 +10,10 @@ function App() {
   return (
     <BrowserRouter>
       <div className="App">
-        <Headers>
+        {/* <Headers>
           <Title />
           <Nav />
-        </Headers>
+        </Headers> */}
         <MainRoutes />
       </div>
     </BrowserRouter>
