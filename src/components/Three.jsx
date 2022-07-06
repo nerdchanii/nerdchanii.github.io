@@ -32,10 +32,10 @@ const Camera = () => {
           setTimeout(() => camera.translateX(speed), 0);
           break;
         case "ArrowUp":
-          setTimeout(() => camera.rotateX(-rotateSpeed), 0);
+          setTimeout(() => camera.rotateX(rotateSpeed), 0);
           break;
         case "ArrowDown":
-          setTimeout(() => camera.rotateX(rotateSpeed), 0);
+          setTimeout(() => camera.rotateX(-rotateSpeed), 0);
           break;
         case "ArrowLeft":
           setTimeout(() => camera.rotateY(rotateSpeed), 0);
@@ -57,7 +57,7 @@ function Three() {
   return (
     <Canvas
       style={{ display: "block", width: "100vw", height: "100vh" }}
-      camera={{ fov: 90, near: 0.1, far: 100000, position: [0, 0, 200] }}
+      camera={{ fov: 90, near: 0.1, far: 100000, position: [100, 100, 1500] }}
       onCreated={(state) => state.gl.setClearColor("black")}
     >
       <Suspense>
