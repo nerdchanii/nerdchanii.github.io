@@ -1,3 +1,116 @@
-@use "./base.scss";
+@use './base.scss';
 
 // put your custom CSS here!
+
+/* 다크모드 버튼 스타일 */
+button.darkmode {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+/* 호버 효과 */
+button.darkmode:hover {
+  background-color: rgba(128, 128, 128, 0.1);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 클릭 효과 */
+button.darkmode:active {
+  transform: scale(0.95);
+  transition: all 0.1s ease;
+}
+
+/* 포커스 효과 (접근성) */
+button.darkmode:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* SVG 아이콘 공통 스타일 */
+button.darkmode svg {
+  width: 24px;
+  height: 24px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  fill: currentColor;
+}
+
+/* 호버 시 아이콘 회전 */
+button.darkmode:hover svg {
+  transform: rotate(15deg);
+}
+
+/* 클릭 시 아이콘 회전 */
+button.darkmode:active svg {
+  transform: rotate(-15deg);
+}
+
+/* 리플 효과 (선택사항) */
+button.darkmode::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition:
+    width 0.3s ease,
+    height 0.3s ease;
+  z-index: -1;
+}
+
+button.darkmode:active::before {
+  width: 60px;
+  height: 60px;
+}
+
+/* 다크모드일 때의 스타일 (예시) */
+button.dark .darkmode:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+button.dark .darkmode::before {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* 접근성 향상 - 모션 감소 설정 */
+@media (prefers-reduced-motion: reduce) {
+  button.darkmode,
+  button.darkmode svg,
+  button.darkmode::before {
+    transition: none;
+  }
+
+  button.darkmode:hover,
+  button.darkmode:active {
+    transform: none;
+  }
+
+  button.darkmode:hover svg,
+  button.darkmode:active svg {
+    transform: none;
+  }
+}
+/* 포커스 효과 제거 */
+button.darkmode:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.article-title {
+  margin-bottom: 1rem;
+}

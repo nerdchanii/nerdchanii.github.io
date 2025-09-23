@@ -1,3 +1,4 @@
+import { h } from "preact"
 import { PageLayout, SharedLayout } from "./quartz/cfg"
 import * as Component from "./quartz/components"
 
@@ -25,12 +26,7 @@ export const defaultContentPageLayout: PageLayout = {
       }),
       condition: (page) => page.fileData.slug !== "index" || page.fileData.filePath !== "index.md",
     }),
-    Component.Flex({
-      components: [
-        { Component: Component.ArticleTitle(), grow: true },
-        { Component: Component.ReaderMode() },
-      ],
-    }),
+    Component.ArticleTitle(),
     Component.ContentMeta(),
     Component.TagList(),
   ],
@@ -72,8 +68,10 @@ export const defaultListPageLayout: PageLayout = {
   beforeBody: [
     Component.Breadcrumbs(),
     Component.ArticleTitle(),
-    Component.ContentMeta(),
-    Component.Spacer(),
+    Component.ContentMeta({
+      showComma: true,
+      showReadingTime: true,
+    }),
   ],
   left: [
     Component.PageTitle(),
