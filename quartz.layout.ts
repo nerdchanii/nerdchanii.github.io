@@ -18,10 +18,19 @@ export const sharedPageComponents: SharedLayout = {
 export const defaultContentPageLayout: PageLayout = {
   beforeBody: [
     Component.ConditionalRender({
-      component: Component.Breadcrumbs(),
-      condition: (page) => page.fileData.slug !== "index",
+      component: Component.Breadcrumbs({
+        rootName: "Home",
+        spacerSymbol: " / ",
+        showCurrentPage: true,
+      }),
+      condition: (page) => page.fileData.slug !== "index" || page.fileData.filePath !== "index.md",
     }),
-    Component.ArticleTitle(),
+    Component.Flex({
+      components: [
+        { Component: Component.ArticleTitle(), grow: true },
+        { Component: Component.ReaderMode() },
+      ],
+    }),
     Component.ContentMeta(),
     Component.TagList(),
   ],
@@ -35,21 +44,37 @@ export const defaultContentPageLayout: PageLayout = {
           grow: true,
         },
         { Component: Component.Darkmode() },
-        { Component: Component.ReaderMode() },
       ],
     }),
-    Component.Explorer(),
+    Component.Explorer({
+      title: "Notes",
+      folderClickBehavior: "collapse",
+      folderDefaultState: "open",
+      useSavedState: true,
+      sortFn: (a, b) => {
+        if (a.isFolder && !b.isFolder) return 1
+        if (!a.isFolder && b.isFolder) return -1
+        return a.displayName.localeCompare(b.displayName)
+      },
+    }),
   ],
   right: [
-    Component.Graph(),
+    // Component.Graph({}),
+    Component.Backlinks({
+      hideWhenEmpty: true,
+    }),
     Component.DesktopOnly(Component.TableOfContents()),
-    Component.Backlinks(),
   ],
 }
 
 // components for pages that display lists of pages  (e.g. tags or folders)
 export const defaultListPageLayout: PageLayout = {
-  beforeBody: [Component.Breadcrumbs(), Component.ArticleTitle(), Component.ContentMeta()],
+  beforeBody: [
+    Component.Breadcrumbs(),
+    Component.ArticleTitle(),
+    Component.ContentMeta(),
+    Component.Spacer(),
+  ],
   left: [
     Component.PageTitle(),
     Component.MobileOnly(Component.Spacer()),
