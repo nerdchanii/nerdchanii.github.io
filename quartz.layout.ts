@@ -43,8 +43,8 @@ export const defaultContentPageLayout: PageLayout = {
       ],
     }),
     Component.Explorer({
-      title: "Notes",
-      folderClickBehavior: "collapse",
+      title: "Notes 📕",
+      folderClickBehavior: "link",
       folderDefaultState: "open",
       useSavedState: true,
       sortFn: (a, b) => {
