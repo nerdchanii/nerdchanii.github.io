@@ -114,3 +114,15 @@ button.darkmode:focus {
 .article-title {
   margin-bottom: 1rem;
 }
+
+.callout {
+  &[data-callout='comment']{
+    --color: #3f3f3f;
+    --border: #eeeeee;
+    --bg: #eeeeee;
+    font-size: small;
+  }
+  &[data-callout='comment'] > .callout-content {
+    --color: #999999;
+  }
+}
