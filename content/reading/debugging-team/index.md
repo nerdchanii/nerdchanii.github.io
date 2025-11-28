@@ -4,6 +4,7 @@ tags:
   - debugging-team
   - reading-log
   - book
+comments: false
 ---
 
 # 
