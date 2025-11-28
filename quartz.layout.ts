@@ -100,7 +100,17 @@ export const defaultListPageLayout: PageLayout = {
         { Component: Component.Darkmode() },
       ],
     }),
-    Component.Explorer(),
+    Component.Explorer({
+      title: "Notes 📕",
+      folderClickBehavior: "link",
+      folderDefaultState: "open",
+      useSavedState: true,
+      sortFn: (a, b) => {
+        if (a.isFolder && !b.isFolder) return 1
+        if (!a.isFolder && b.isFolder) return -1
+        return a.displayName.localeCompare(b.displayName)
+      },
+    }),
   ],
   right: [],
 }
