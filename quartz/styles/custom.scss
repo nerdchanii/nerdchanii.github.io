@@ -122,7 +122,15 @@ button.darkmode:focus {
     --bg: #eeeeee;
     font-size: small;
   }
-  &[data-callout='comment'] > .callout-content {
-    --color: #999999;
+}
+
+:root[saved-theme=dark] {
+    .callout {
+    &[data-callout='comment']{
+      --color: #f3f3f3;
+      --border: #333333;
+      --bg: #4a4a4a;
+      font-size: small;
+    }
   }
 }

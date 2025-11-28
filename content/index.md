@@ -1,5 +1,6 @@
 ---
 title: Nerdchanii's Note
+comments: false
 ---
 # Hi, there! 🙋🏻‍♂️  
 

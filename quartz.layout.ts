@@ -6,7 +6,21 @@ import * as Component from "./quartz/components"
 export const sharedPageComponents: SharedLayout = {
   head: Component.Head(),
   header: [],
-  afterBody: [],
+  afterBody: [
+    Component.Comments({
+      provider: "giscus",
+      options: {
+        repo: "nerdchanii/nerdchanii.github.io",
+        repoId: "R_kgDOP1UnAw",
+        category: "Announcements",
+        categoryId: "DIC_kwDOP1UnA84CzHKQ",
+        mapping: "pathname",
+        reactionsEnabled: true,
+        inputPosition: 'top',
+        lang: 'ko',
+      }
+    })
+  ],
   footer: Component.Footer({
     links: {
       GitHub: "https://github.com/jackyzha0/quartz",
@@ -28,7 +42,7 @@ export const defaultContentPageLayout: PageLayout = {
     }),
     Component.ArticleTitle(),
     Component.ContentMeta(),
-    Component.TagList(),
+    // Component.TagList(),
   ],
   left: [
     Component.PageTitle(),
@@ -60,6 +74,7 @@ export const defaultContentPageLayout: PageLayout = {
       hideWhenEmpty: true,
     }),
     Component.DesktopOnly(Component.TableOfContents()),
+    Component.TagList(),
   ],
 }
 
