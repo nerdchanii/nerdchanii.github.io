@@ -19,7 +19,7 @@ const config: QuartzConfig = {
     locale: "ko-KR",
     baseUrl: "nerdchanii.github.io",
     ignorePatterns: ["private", "templates", ".obsidian"],
-    defaultDateType: "published",
+    defaultDateType: "modified",
     theme: {
       fontOrigin: "googleFonts",
       cdnCaching: true,
