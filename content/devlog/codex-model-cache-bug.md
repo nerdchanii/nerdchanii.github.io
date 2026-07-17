@@ -7,6 +7,8 @@ tags:
   - cache
 ---
 
+![[codex-model-cache-hero.png]]
+
 ### How identical app-server binaries received different model catalogs—and why subagent tools appeared and disappeared
 
 I started with a simple but confusing symptom: Codex subagent tools were unavailable in some sessions, even though multi-agent support was enabled.
@@ -103,6 +105,8 @@ The Desktop and CLI responses shared one ETag. The Chrome side-panel response ha
 Both responses were valid. The problem was that Codex treated them as interchangeable when storing them locally.
 
 ## One shared file, two incompatible answers
+
+![[codex-shared-cache-diagram.png]]
 
 Both app-server processes wrote their catalog to:
 
