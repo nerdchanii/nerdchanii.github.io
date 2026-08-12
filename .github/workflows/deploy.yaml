@@ -23,7 +23,7 @@ jobs:
         with:
           fetch-depth: 0 # Fetch all history for git info
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 22
@@ -33,7 +33,7 @@ jobs:
       - name: Build Quartz
         run: npm run quartz -- build
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: public
 
@@ -46,4 +46,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
