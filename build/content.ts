@@ -45,6 +45,8 @@ function readFrontmatter(file: string): Frontmatter {
   return matter(fs.readFileSync(file, "utf8")).data as Frontmatter
 }
 
+const toIso = (value: string | Date) => new Date(value).toISOString()
+
 const gitDateCache = new Map<string, { created: string | null; updated: string | null }>()
 
 /** 파일의 git 최초·마지막 커밋 시각. 커밋되지 않은 파일은 null. */
@@ -62,12 +64,16 @@ function gitDates(file: string) {
   } catch {
     // git이 없거나 저장소 밖이면 날짜 없이 진행한다.
   }
-  const result = { created: dates.at(-1) ?? null, updated: dates[0] ?? null }
+  // 커밋마다 시간대 오프셋이 달라도 문자열 정렬이 시간순이 되도록 UTC ISO로 맞춘다.
+  const created = dates.at(-1)
+  const updated = dates[0]
+  const result = {
+    created: created ? toIso(created) : null,
+    updated: updated ? toIso(updated) : null,
+  }
   gitDateCache.set(file, result)
   return result
 }
-
-const toIso = (value: string | Date) => new Date(value).toISOString()
 
 /**
  * content/ 아래의 모든 글을 스캔해서 URL이 확정된 목록을 만든다.
