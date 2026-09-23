@@ -24,3 +24,22 @@ export const RESERVED_OUTPUT_NAMES = [
 
 /** content/ 안의 이미지 등 미디어 파일이 복사되는 경로 */
 export const MEDIA_PREFIX = "_media"
+
+/**
+ * 사이트 경로를 글 URL 형태로 맞춘다. 퍼센트 인코딩을 풀고 NFC로 바꾼 뒤,
+ * 끝의 `/index.html`과 `/`를 뗀다 (`/a/b/index.html`, `/a/b/` → `/a/b`).
+ */
+export function canonicalPath(pathname: string): string {
+  let decoded = pathname
+  try {
+    decoded = decodeURIComponent(pathname)
+  } catch {
+    // 잘못된 인코딩이면 원문 그대로 쓴다.
+  }
+  return (
+    decoded
+      .normalize("NFC")
+      .replace(/\/index\.html$/i, "")
+      .replace(/\/+$/, "") || "/"
+  )
+}

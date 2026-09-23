@@ -5,7 +5,12 @@ import { fileURLToPath } from "node:url"
 import matter from "gray-matter"
 import { globSync } from "tinyglobby"
 import type { Plugin } from "vite"
-import { MEDIA_PREFIX, RESERVED_OUTPUT_NAMES, RESERVED_ROUTES } from "../src/lib/routes.ts"
+import {
+  canonicalPath,
+  MEDIA_PREFIX,
+  RESERVED_OUTPUT_NAMES,
+  RESERVED_ROUTES,
+} from "../src/lib/routes.ts"
 import { tagSlug } from "../src/lib/tags.ts"
 import { excerpt } from "./excerpt.ts"
 import { parseFrontmatter, type Frontmatter } from "./frontmatter.ts"
@@ -159,13 +164,8 @@ function outgoingLinks(
       const url = resolver.page(ref.target, entry.file)?.url
       if (url) found.add(url)
     } else if (ref.kind === "link" && ref.url.startsWith("/") && !ref.url.startsWith("//")) {
-      let url = ref.url.split(/[?#]/)[0]
-      try {
-        url = decodeURIComponent(url)
-      } catch {
-        continue
-      }
-      url = normalizePath(url.normalize("NFC"))
+      // 앱에서 `findEntry()`가 찾는 것과 같은 규칙으로 맞춘다 (`/a/b/index.html` → `/a/b`).
+      const url = canonicalPath(ref.url.split(/[?#]/)[0])
       if (urls.has(url)) found.add(url)
     } else if (ref.kind === "link") {
       const target = resolver.resolve(ref.url, entry.file)

@@ -1,4 +1,5 @@
 import { entries, type Entry } from "virtual:content"
+import { canonicalPath } from "./routes.ts"
 import { tagSlug } from "./tags.ts"
 
 /** ISO 날짜 문자열 비교. localeCompare는 실행 환경의 로캘을 따르므로 서버와 브라우저에서 결과가 같도록 코드 포인트로 비교한다 */
@@ -16,18 +17,7 @@ export const posts: Entry[] = entries
 
 /** 브라우저 pathname(퍼센트 인코딩)과 서버 경로 모두 받아서 글을 찾는다. */
 export function findEntry(pathname: string): Entry | undefined {
-  let decoded = pathname
-  try {
-    decoded = decodeURIComponent(pathname)
-  } catch {
-    // 잘못된 인코딩이면 원문 그대로 찾는다.
-  }
-  const normalized =
-    decoded
-      .normalize("NFC")
-      .replace(/\/index\.html$/, "")
-      .replace(/\/+$/, "") || "/"
-  return byUrl.get(normalized)
+  return byUrl.get(canonicalPath(pathname))
 }
 
 /** prerender할 글 경로 전체 */
