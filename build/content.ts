@@ -65,6 +65,8 @@ export function loadContent(): ContentEntry[] {
   for (const id of files) {
     const file = path.join(CONTENT_DIR, id)
     const fm = readFrontmatter(file)
+    // 초안은 빌드에서 빠지므로 URL 검증(예약 경로·충돌)에서도 제외한다.
+    if (fm.draft) continue
     const name = path.basename(id, path.extname(id))
     const dir = path.dirname(id)
     const isIndex = name === "index"
@@ -93,12 +95,12 @@ export function loadContent(): ContentEntry[] {
       tags: fm.tags ?? [],
       date: fm.date ? new Date(fm.date).toISOString() : null,
       description: fm.description ?? null,
-      draft: fm.draft ?? false,
+      draft: false,
       comments: fm.comments ?? true,
     })
   }
 
-  return entries.filter((e) => !e.draft)
+  return entries
 }
 
 const VIRTUAL_ID = "virtual:content"
