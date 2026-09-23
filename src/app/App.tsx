@@ -7,6 +7,7 @@ import Blog from "../pages/Blog.tsx"
 import Home from "../pages/Home.tsx"
 import NotFound from "../pages/NotFound.tsx"
 import Post from "../pages/Post.tsx"
+import "katex/dist/katex.min.css"
 import "../styles/global.css"
 
 function Layout(props: RouteSectionProps) {

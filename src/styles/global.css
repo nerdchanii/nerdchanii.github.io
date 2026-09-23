@@ -125,3 +125,33 @@ a:hover {
   border-left: 3px solid var(--border);
   color: var(--text-muted);
 }
+
+.prose .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+}
+
+/* Obsidian callout */
+.prose .callout {
+  margin: 1.25rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  background: var(--code-bg);
+  color: var(--text);
+}
+
+.prose .callout-title {
+  margin: 0 0 0.25rem;
+  font-weight: 700;
+}
+
+.prose .callout-quote {
+  border-left-color: var(--text-muted);
+  font-style: italic;
+}
+
+.prose .callout-quote .callout-title {
+  font-style: normal;
+}

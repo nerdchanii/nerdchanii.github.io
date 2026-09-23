@@ -11,6 +11,7 @@ declare module "virtual:content" {
     isIndex: boolean
     tags: string[]
     date: string | null
+    updated: string | null
     description: string | null
     draft: boolean
     comments: boolean

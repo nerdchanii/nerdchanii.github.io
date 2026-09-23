@@ -1,10 +1,11 @@
+import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import matter from "gray-matter"
 import { globSync } from "tinyglobby"
 import type { Plugin } from "vite"
-import { RESERVED_OUTPUT_NAMES, RESERVED_ROUTES } from "../src/lib/routes.ts"
+import { MEDIA_PREFIX, RESERVED_OUTPUT_NAMES, RESERVED_ROUTES } from "../src/lib/routes.ts"
 import { normalizePath, slugifySegment } from "./slug.ts"
 
 export const CONTENT_DIR = fileURLToPath(new URL("../content", import.meta.url))
@@ -21,7 +22,10 @@ export type ContentEntry = {
   /** 폴더 index 페이지 여부 */
   isIndex: boolean
   tags: string[]
+  /** 작성일. frontmatter `date`, 없으면 git 최초 커밋 */
   date: string | null
+  /** 수정일. git 마지막 커밋 */
+  updated: string | null
   description: string | null
   draft: boolean
   comments: boolean
@@ -41,8 +45,35 @@ function readFrontmatter(file: string): Frontmatter {
   return matter(fs.readFileSync(file, "utf8")).data as Frontmatter
 }
 
-/** content/ 아래의 모든 글을 스캔해서 URL이 확정된 목록을 만든다. */
-export function loadContent(): ContentEntry[] {
+const gitDateCache = new Map<string, { created: string | null; updated: string | null }>()
+
+/** 파일의 git 최초·마지막 커밋 시각. 커밋되지 않은 파일은 null. */
+function gitDates(file: string) {
+  const cached = gitDateCache.get(file)
+  if (cached) return cached
+  let dates: string[] = []
+  try {
+    dates = execFileSync("git", ["log", "--follow", "--format=%aI", "--", file], {
+      cwd: CONTENT_DIR,
+      encoding: "utf8",
+    })
+      .split("\n")
+      .filter(Boolean)
+  } catch {
+    // git이 없거나 저장소 밖이면 날짜 없이 진행한다.
+  }
+  const result = { created: dates.at(-1) ?? null, updated: dates[0] ?? null }
+  gitDateCache.set(file, result)
+  return result
+}
+
+const toIso = (value: string | Date) => new Date(value).toISOString()
+
+/**
+ * content/ 아래의 모든 글을 스캔해서 URL이 확정된 목록을 만든다.
+ * `withDates`가 false면 git을 호출하지 않는다 (링크 해석처럼 날짜가 필요 없을 때).
+ */
+export function loadContent({ withDates = true } = {}): ContentEntry[] {
   const files = globSync("**/*.{md,mdx}", { cwd: CONTENT_DIR }).sort()
 
   // 폴더 index의 frontmatter slug는 그 폴더의 URL 조각을 바꾼다.
@@ -89,6 +120,7 @@ export function loadContent(): ContentEntry[] {
     if (existing) throw new Error(`URL 충돌: ${url} ← ${existing}, ${id}`)
     byUrl.set(key, id)
 
+    const git = withDates ? gitDates(file) : { created: null, updated: null }
     entries.push({
       id,
       file,
@@ -97,7 +129,8 @@ export function loadContent(): ContentEntry[] {
       section: dir === "." ? "" : id.split("/")[0].normalize("NFC"),
       isIndex,
       tags: fm.tags ?? [],
-      date: fm.date ? new Date(fm.date).toISOString() : null,
+      date: fm.date ? toIso(fm.date) : git.created,
+      updated: git.updated,
       description: fm.description ?? null,
       draft: false,
       comments: fm.comments ?? true,
@@ -107,14 +140,24 @@ export function loadContent(): ContentEntry[] {
   return entries
 }
 
+/** content/ 안의 글이 아닌 파일(이미지 등). content/ 기준 상대 경로 */
+export function listMediaFiles(): string[] {
+  return globSync("**/*", { cwd: CONTENT_DIR, ignore: ["**/*.{md,mdx}"] }).sort()
+}
+
+/** 미디어 파일의 공개 URL (`/_media/devlog/images/x.png`) */
+export function mediaUrl(relPath: string): string {
+  return encodeURI(`/${MEDIA_PREFIX}/${relPath.normalize("NFC")}`)
+}
+
 const VIRTUAL_ID = "virtual:content"
 const RESOLVED_ID = "\0" + VIRTUAL_ID
 
 /**
- * `virtual:content` 모듈을 제공한다.
+ * `virtual:content` 모듈을 제공하고, content/ 안의 미디어 파일을 `/_media/`로 내보낸다.
  * 글 메타데이터는 그대로 싣고, 본문은 글마다 lazy import로 분리한다.
  */
-export function contentPlugin(): Plugin {
+export function contentPlugin({ onChange }: { onChange?: () => void } = {}): Plugin {
   return {
     name: "content",
     resolveId(id) {
@@ -129,10 +172,30 @@ export function contentPlugin(): Plugin {
       })
       return `import { lazy } from "solid-js"\nexport const entries = [\n${items.join(",\n")}\n]\n`
     },
+    generateBundle() {
+      // 미디어 파일은 브라우저 번들에만 한 번 복사한다.
+      if (this.environment.config.consumer !== "client") return
+      for (const rel of listMediaFiles()) {
+        this.emitFile({
+          type: "asset",
+          fileName: `${MEDIA_PREFIX}/${rel.normalize("NFC")}`,
+          source: fs.readFileSync(path.join(CONTENT_DIR, rel)),
+        })
+      }
+    },
     configureServer(server) {
+      // dev 서버에서 /_media/ 요청을 content/ 파일로 응답한다.
+      server.middlewares.use(`/${MEDIA_PREFIX}/`, (req, res, next) => {
+        const rel = decodeURIComponent((req.url ?? "").split("?")[0]).replace(/^\/+/, "")
+        const file = path.resolve(CONTENT_DIR, rel)
+        if (!file.startsWith(CONTENT_DIR + path.sep) || !fs.existsSync(file)) return next()
+        fs.createReadStream(file).pipe(res)
+      })
+
       // 글이 추가·삭제·수정되면 목록(frontmatter, URL)을 다시 만든다.
       const refresh = (file: string) => {
         if (!file.startsWith(CONTENT_DIR)) return
+        onChange?.()
         const mod = server.moduleGraph.getModuleById(RESOLVED_ID)
         if (mod) server.moduleGraph.invalidateModule(mod)
         server.ws.send({ type: "full-reload" })
