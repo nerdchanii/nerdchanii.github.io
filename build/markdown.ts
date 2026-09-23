@@ -12,7 +12,8 @@ import { visit } from "unist-util-visit"
 
 /** `[[글]]`, `![[파일]]`, `[[글#제목|표시]]`: 1=`!`, 2=대상, 3=`#제목`, 4=표시 */
 export const WIKILINK = /(!?)\[\[([^\]|#]*)(#[^\]|]*)?(?:\|([^\]]*))?\]\]/g
-export const IMAGE_EXT = /\.(png|jpe?g|gif|webp|avif|svg)$/i
+/** Quartz가 이미지로 임베드하던 확장자(png, jpg, jpeg, gif, bmp, svg, webp)에 avif를 더한다 */
+export const IMAGE_EXT = /\.(png|jpe?g|gif|bmp|webp|avif|svg)$/i
 
 /**
  * Obsidian 본문 태그(`#태그`). Quartz의 규칙을 따른다:
