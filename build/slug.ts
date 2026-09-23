@@ -11,7 +11,8 @@ export function slugifySegment(segment: string): string {
     .replace(/[?#%\\"'<>`^{}|]/g, "")
 
   // URL 조각은 그대로 dist/ 아래 경로가 되므로, 한 단계짜리 이름만 허용한다.
-  if (slug === "" || slug === "." || slug === ".." || slug.includes("/")) {
+  // `.`으로 시작하는 이름(`..`, `.nojekyll` 등)도 막는다.
+  if (slug === "" || slug.startsWith(".") || slug.includes("/")) {
     throw new Error(`사용할 수 없는 slug: ${JSON.stringify(segment)}`)
   }
   return slug

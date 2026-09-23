@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url"
 import matter from "gray-matter"
 import { globSync } from "tinyglobby"
 import type { Plugin } from "vite"
-import { RESERVED_ROUTES } from "../src/lib/routes.ts"
+import { RESERVED_OUTPUT_NAMES, RESERVED_ROUTES } from "../src/lib/routes.ts"
 import { normalizePath, slugifySegment } from "./slug.ts"
 
 export const CONTENT_DIR = fileURLToPath(new URL("../content", import.meta.url))
@@ -79,7 +79,7 @@ export function loadContent(): ContentEntry[] {
       isIndex ? dirUrl(dir) : `${dirUrl(dir)}/${slugifySegment(fm.slug ?? name)}`,
     )
 
-    if (RESERVED_ROUTES.includes(url)) {
+    if (RESERVED_ROUTES.includes(url) || RESERVED_OUTPUT_NAMES.includes(url.split("/")[1])) {
       throw new Error(`예약된 경로와 겹치는 글: ${url} ← ${id}`)
     }
     const existing = byUrl.get(url)

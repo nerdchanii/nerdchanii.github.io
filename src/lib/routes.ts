@@ -5,3 +5,6 @@ export const STATIC_ROUTES = ["/", "/blog"]
 export const NOT_FOUND_ROUTE = "/404"
 
 export const RESERVED_ROUTES = [...STATIC_ROUTES, NOT_FOUND_ROUTE]
+
+/** 빌드가 dist/ 최상위에 직접 만드는 파일·폴더. 글 URL의 첫 조각으로 쓸 수 없다. */
+export const RESERVED_OUTPUT_NAMES = ["assets", "index.html", "404.html"]
