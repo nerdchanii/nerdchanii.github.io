@@ -21,11 +21,9 @@ import type {
 import { SKIP, visit } from "unist-util-visit"
 import type { VFile } from "vfile"
 import { tagUrl } from "../../src/lib/tags.ts"
-import { matchTags } from "../inline-tags.ts"
+import { matchTags, splitWikilink, WIKILINK } from "../markdown.ts"
 import { isNotRelative, type Resolver } from "../resolve.ts"
 
-const WIKILINK = /(!?)\[\[([^\]|#]*)(#[^\]|]*)?(?:\|([^\]]*))?\]\]/g
-const IMAGE_EXT = /\.(png|jpe?g|gif|webp|avif|svg)$/i
 const CALLOUT = /^\[!(\w+)\][+-]?[ \t]*([^\n]*)\n?/
 
 /** rehype-slug와 같은 규칙으로 제목 anchor를 만든다 */
@@ -37,16 +35,15 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
     const warn = (message: string) => console.warn(`[obsidian] ${file.path}: ${message}`)
 
     visit(tree, "text", (node: Text, index, parent) => {
-      if (!parent || index === undefined || !node.value.includes("[[")) return
+      // 링크 글자 안은 그대로 둔다 (scanBody와 같은 규칙).
+      if (!parent || index === undefined || parent.type === "link" || !node.value.includes("[["))
+        return
 
       const parts: PhrasingContent[] = []
       let last = 0
       for (const match of node.value.matchAll(WIKILINK)) {
         const [raw, bang, rawTarget, hash, rawLabel] = match
-        // `![[diagram#1.png]]`처럼 파일명에 `#`이 들어간 임베드는 제목 조각이 아니라 파일명으로 본다.
-        const embedsFile = Boolean(bang) && IMAGE_EXT.test(rawTarget + (hash ?? ""))
-        const target = (embedsFile ? rawTarget + (hash ?? "") : rawTarget).trim()
-        const heading = embedsFile ? undefined : hash?.slice(1).trim()
+        const { embedsFile, target, heading } = splitWikilink(bang, rawTarget, hash)
         const label = rawLabel?.trim()
         if (match.index > last)
           parts.push({ type: "text", value: node.value.slice(last, match.index) })

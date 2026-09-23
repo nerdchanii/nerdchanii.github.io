@@ -9,7 +9,7 @@ import { MEDIA_PREFIX, RESERVED_OUTPUT_NAMES, RESERVED_ROUTES } from "../src/lib
 import { tagSlug } from "../src/lib/tags.ts"
 import { excerpt } from "./excerpt.ts"
 import { parseFrontmatter, type Frontmatter } from "./frontmatter.ts"
-import { inlineTags } from "./inline-tags.ts"
+import { parseMarkdown, scanBody, type BodyRef } from "./markdown.ts"
 import { createResolver, type Resolver } from "./resolve.ts"
 import { normalizePath, slugifySegment } from "./slug.ts"
 
@@ -110,20 +110,13 @@ function aliasUrl(alias: string, entryUrl: string, isIndex: boolean): string {
   return normalizePath(segments.join("/"))
 }
 
-const WIKILINK = /(?<!!)\[\[([^\]|#]*)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/g
-const IMAGE_EXT = /\.(png|jpe?g|gif|webp|avif|svg)$/i
-const MD_LINK = /\]\((\/[^)\s]*)\)/g
-/** `[글](../other.md)`, `[글](<../다른 글.md>)` */
-const ANY_MD_LINK = /(?<!!)\[[^\]]*\]\((?:<([^>\n]+)>|([^)\s]+))/g
-
-/** 본문에서 다른 글로 가는 링크(위키링크, `/`로 시작하는 마크다운 링크)의 URL을 모은다 */
 /**
  * 링크 미리보기 이미지. frontmatter `image`가 있으면 그것을, 없으면 본문의 첫 이미지를 쓴다.
  * 외부 URL은 그대로, content/ 안의 파일은 `/_media/…` 경로로 바꾼다.
  */
 function previewImage(
   explicit: string | undefined,
-  body: string,
+  refs: BodyRef[],
   entry: ContentEntry,
   resolver: Resolver,
 ): string | null {
@@ -141,54 +134,43 @@ function previewImage(
   }
   if (explicit) return fromUrl(explicit)
 
-  const text = body.replace(/^(```|~~~)[\s\S]*?^\1/gm, "")
-  for (const [, embed, bracketed, bare] of text.matchAll(
-    /!\[\[([^\]|]+)(?:\|[^\]]*)?\]\]|!\[[^\]]*\]\((?:<([^>\n]+)>|([^)\s]+))/g,
-  )) {
-    const url = bracketed ?? bare
-    if (embed) {
-      // `![[diagram#1.png]]`처럼 `#`까지 합쳐 이미지 파일명이면 파일명으로 본다 (remarkObsidian과 같은 규칙).
-      const whole = embed.trim()
-      const name = IMAGE_EXT.test(whole) ? whole : whole.split("#")[0].trim()
-      if (!IMAGE_EXT.test(name)) continue
-      const found = resolver.media(name, entry.file)
-      if (found) return found
-    } else {
-      // `![](…)`는 문법상 이미지이므로 확장자로 거르지 않는다.
-      const found = fromUrl(url)
-      if (found) return found
-    }
+  for (const ref of refs) {
+    const found =
+      ref.kind === "image"
+        ? fromUrl(ref.url)
+        : ref.kind === "wikilink" && ref.embedsFile
+          ? resolver.media(ref.target, entry.file)
+          : undefined
+    if (found) return found
   }
   return null
 }
 
+/** 본문에서 다른 글로 가는 링크(위키링크, 사이트 절대 경로, 글 기준 상대 경로)의 URL을 모은다 */
 function outgoingLinks(
-  body: string,
+  refs: BodyRef[],
   entry: ContentEntry,
   resolver: Resolver,
   urls: Set<string>,
 ): string[] {
-  const text = body.replace(/^(```|~~~)[\s\S]*?^\1/gm, "")
   const found = new Set<string>()
-  for (const [, target] of text.matchAll(WIKILINK)) {
-    if (!target.trim()) continue
-    const url = resolver.page(target, entry.file)?.url
-    if (url) found.add(url)
-  }
-  // 글 기준 상대 경로 링크(`[글](../other.md)`)
-  for (const [, bracketed, bare] of text.matchAll(ANY_MD_LINK)) {
-    const target = resolver.resolve(bracketed ?? bare, entry.file)
-    if (target?.kind === "page") found.add(target.entry.url)
-  }
-  for (const [, href] of text.matchAll(MD_LINK)) {
-    let url = href.split(/[?#]/)[0]
-    try {
-      url = decodeURIComponent(url)
-    } catch {
-      continue
+  for (const ref of refs) {
+    if (ref.kind === "wikilink" && !ref.embedsFile && ref.target) {
+      const url = resolver.page(ref.target, entry.file)?.url
+      if (url) found.add(url)
+    } else if (ref.kind === "link" && ref.url.startsWith("/") && !ref.url.startsWith("//")) {
+      let url = ref.url.split(/[?#]/)[0]
+      try {
+        url = decodeURIComponent(url)
+      } catch {
+        continue
+      }
+      url = normalizePath(url.normalize("NFC"))
+      if (urls.has(url)) found.add(url)
+    } else if (ref.kind === "link") {
+      const target = resolver.resolve(ref.url, entry.file)
+      if (target?.kind === "page") found.add(target.entry.url)
     }
-    url = normalizePath(url.normalize("NFC"))
-    if (urls.has(url)) found.add(url)
   }
   found.delete(entry.url)
   return [...found]
@@ -227,7 +209,7 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
   }
 
   const entries: ContentEntry[] = []
-  const bodies = new Map<string, string>()
+  const bodyRefs = new Map<string, BodyRef[]>()
   const images = new Map<string, string>()
   const byUrl = new Map<string, string>()
 
@@ -264,7 +246,8 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
     const git = withDates ? gitDates(file) : { created: null, updated: null }
     const rawAliases = [...toList(fm.aliases), ...toList(fm.alias)]
     const oldPath = rawAliases.find((a) => a.startsWith("/"))
-    bodies.set(id, body)
+    const refs = scanBody(parseMarkdown(body))
+    bodyRefs.set(id, refs)
     const ogImage = fm.image ?? fm.socialImage
     if (ogImage) images.set(id, ogImage)
     entries.push({
@@ -275,7 +258,10 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
       section: dir === "." ? "" : id.split("/")[0].normalize("NFC"),
       isIndex,
       // frontmatter 태그 뒤에 본문 `#태그`를 붙인다. 같은 태그는 한 번만 둔다.
-      tags: uniqueTags([...toList(fm.tags), ...inlineTags(body)]),
+      tags: uniqueTags([
+        ...toList(fm.tags),
+        ...refs.flatMap((ref) => (ref.kind === "tag" ? [ref.tag] : [])),
+      ]),
       date: fm.date ? toIso(fm.date) : git.created,
       updated: fm.updated ? toIso(fm.updated) : git.updated,
       // Quartz처럼 description이 없으면 본문 앞부분으로 만든다.
@@ -298,8 +284,9 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
   const resolver = createResolver(entries)
   const urls = new Set(entries.map((e) => e.url))
   for (const entry of entries) {
-    entry.links = outgoingLinks(bodies.get(entry.id) ?? "", entry, resolver, urls)
-    entry.image = previewImage(images.get(entry.id), bodies.get(entry.id) ?? "", entry, resolver)
+    const refs = bodyRefs.get(entry.id) ?? []
+    entry.links = outgoingLinks(refs, entry, resolver, urls)
+    entry.image = previewImage(images.get(entry.id), refs, entry, resolver)
   }
 
   return entries
