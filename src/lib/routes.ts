@@ -16,6 +16,8 @@ export const RESERVED_OUTPUT_NAMES = [
   "index.xml",
   "sitemap.xml",
   "og.png",
+  "favicon.ico",
+  "icon.png",
   "_media",
   "tags",
 ]
