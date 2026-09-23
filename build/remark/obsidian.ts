@@ -25,7 +25,7 @@ import { linkTextNodes, matchTags, splitWikilink, WIKILINK } from "../markdown.t
 import { isNotRelative, type Resolver } from "../resolve.ts"
 
 /** `[!type]`, `[!multi-column]`, `[!note|meta]`, 접기 표시 `+`/`-` (Quartz와 같은 규칙) */
-const CALLOUT = /^\[!([\w-]+)(?:\|([^\]]*))?\][+-]?[ \t]*/
+const CALLOUT = /^\[!([\w-]+)(?:\|([^\]]*))?\]([+-]?)[ \t]*/
 
 /** rehype-slug와 같은 규칙으로 제목 anchor를 만든다 */
 const headingId = (heading: string) => new GithubSlugger().slug(heading.trim())
@@ -131,7 +131,7 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
       const match = CALLOUT.exec(head.value)
       if (!match) return
 
-      const [marker, type, metadata] = match
+      const [marker, type, metadata, fold] = match
       const kind = type.toLowerCase()
 
       // 마커 뒤부터 첫 줄바꿈까지가 제목이다. `**굵게**` 같은 서식 노드도 제목에 그대로 둔다.
@@ -160,7 +160,11 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
 
       const titleNode: Paragraph = {
         type: "paragraph",
-        data: { hProperties: { className: ["callout-title"] } },
+        // 접을 수 있는 callout(`-` 접힘, `+` 펼침)은 <details>/<summary>로 만들어 JS 없이 접고 편다.
+        data: {
+          ...(fold ? { hName: "summary" } : {}),
+          hProperties: { className: ["callout-title"] },
+        },
         children:
           titleChildren.length > 0
             ? titleChildren
@@ -169,8 +173,10 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
       node.children.unshift(titleNode)
       node.data = {
         ...node.data,
+        ...(fold ? { hName: "details" } : {}),
         hProperties: {
-          className: ["callout", `callout-${kind}`],
+          className: ["callout", `callout-${kind}`, ...(fold ? ["is-collapsible"] : [])],
+          ...(fold === "+" ? { open: true } : {}),
           ...(metadata ? { dataCalloutMetadata: metadata.trim() } : {}),
         },
       }

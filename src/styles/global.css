@@ -341,6 +341,32 @@ a:hover {
   font-weight: 700;
 }
 
+/* 접을 수 있는 callout: <details>/<summary> */
+.prose details.callout > summary.callout-title {
+  cursor: pointer;
+  list-style: none;
+}
+
+.prose details.callout > summary.callout-title::-webkit-details-marker {
+  display: none;
+}
+
+.prose details.callout > summary.callout-title::after {
+  content: "▸";
+  display: inline-block;
+  margin-left: 0.375rem;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+.prose details.callout[open] > summary.callout-title::after {
+  transform: rotate(90deg);
+}
+
+.prose details.callout:not([open]) > summary.callout-title {
+  margin-bottom: 0;
+}
+
 .prose .callout-quote {
   border-left-color: var(--text-muted);
   font-style: italic;
