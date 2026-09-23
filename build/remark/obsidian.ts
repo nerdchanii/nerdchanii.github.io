@@ -4,11 +4,14 @@
  * - `[[글]]`, `[[글|표시]]`, `[[글#제목]]`, `[[#제목]]` → 링크
  * - `![[image.png]]` → 이미지
  * - `> [!type] 제목` → callout (class가 붙은 blockquote)
+ * - `#태그` → 태그 페이지 링크
  */
 import GithubSlugger from "github-slugger"
 import type { Blockquote, Paragraph, PhrasingContent, Root, Text } from "mdast"
 import { SKIP, visit } from "unist-util-visit"
 import type { VFile } from "vfile"
+import { tagUrl } from "../../src/lib/tags.ts"
+import { matchTags } from "../inline-tags.ts"
 import type { Resolver } from "../resolve.ts"
 
 const WIKILINK = /(!?)\[\[([^\]|#]*)(#[^\]|]*)?(?:\|([^\]]*))?\]\]/g
@@ -68,6 +71,29 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
       }
 
       if (parts.length === 0) return
+      if (last < node.value.length) parts.push({ type: "text", value: node.value.slice(last) })
+      parent.children.splice(index, 1, ...parts)
+      return [SKIP, index + parts.length]
+    })
+
+    // 위키링크를 바꾼 뒤에 돈다. 링크 안의 글자는 건너뛴다.
+    visit(tree, "text", (node: Text, index, parent) => {
+      if (!parent || index === undefined || parent.type === "link") return
+      const found = matchTags(node.value)
+      if (found.length === 0) return
+
+      const parts: PhrasingContent[] = []
+      let last = 0
+      for (const { index: at, raw, tag } of found) {
+        if (at > last) parts.push({ type: "text", value: node.value.slice(last, at) })
+        parts.push({
+          type: "link",
+          url: tagUrl(tag),
+          data: { hProperties: { className: ["tag-link"] } },
+          children: [{ type: "text", value: raw }],
+        })
+        last = at + raw.length
+      }
       if (last < node.value.length) parts.push({ type: "text", value: node.value.slice(last) })
       parent.children.splice(index, 1, ...parts)
       return [SKIP, index + parts.length]

@@ -6,8 +6,10 @@ import matter from "gray-matter"
 import { globSync } from "tinyglobby"
 import type { Plugin } from "vite"
 import { MEDIA_PREFIX, RESERVED_OUTPUT_NAMES, RESERVED_ROUTES } from "../src/lib/routes.ts"
+import { tagSlug } from "../src/lib/tags.ts"
 import { excerpt } from "./excerpt.ts"
 import { parseFrontmatter, type Frontmatter } from "./frontmatter.ts"
+import { inlineTags } from "./inline-tags.ts"
 import { createResolver, type Resolver } from "./resolve.ts"
 import { normalizePath, slugifySegment } from "./slug.ts"
 
@@ -137,6 +139,16 @@ function outgoingLinks(
   return [...found]
 }
 
+function uniqueTags(tags: string[]): string[] {
+  const seen = new Set<string>()
+  return tags.filter((tag) => {
+    const slug = tagSlug(tag)
+    if (!slug || seen.has(slug)) return false
+    seen.add(slug)
+    return true
+  })
+}
+
 /**
  * content/ 아래의 모든 글을 스캔해서 URL이 확정된 목록을 만든다.
  * `withDates`가 false면 git을 호출하지 않는다 (링크 해석처럼 날짜가 필요 없을 때).
@@ -204,7 +216,8 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
       title: fm.title ?? (isIndex ? path.basename(dir) : name).normalize("NFC"),
       section: dir === "." ? "" : id.split("/")[0].normalize("NFC"),
       isIndex,
-      tags: toList(fm.tags),
+      // frontmatter 태그 뒤에 본문 `#태그`를 붙인다. 같은 태그는 한 번만 둔다.
+      tags: uniqueTags([...toList(fm.tags), ...inlineTags(body)]),
       date: fm.date ? toIso(fm.date) : git.created,
       updated: git.updated,
       // Quartz처럼 description이 없으면 본문 앞부분으로 만든다.

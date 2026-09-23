@@ -18,6 +18,7 @@ export function excerpt(markdown: string): string | null {
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // [텍스트](url) → 텍스트
     .replace(/\$([^$\n]*)\$/g, (_, tex: string) => (tex.includes("\\") ? " " : tex)) // 간단한 인라인 수식만 남김
     .replace(/<[^>]+>/g, " ") // HTML 태그
+    .replace(/(^|\s)#(?!\d+(?:\s|$))[^\s#]+/gu, "$1") // 본문 #태그 (#123 같은 숫자는 남김)
     .replace(/`([^`]*)`/g, "$1")
     .replace(/(\*\*|__|\*|_|~~|==)(?=\S)([\s\S]*?\S)\1/g, "$2") // 강조
     .replace(/^\s*(?:[-*+]|\d+\.)\s+/gm, "") // 목록 기호
