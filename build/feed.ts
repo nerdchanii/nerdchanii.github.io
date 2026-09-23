@@ -7,6 +7,8 @@ export const FEED_PATH = "/index.xml"
 
 export type FeedItem = {
   url: string
+  /** GUID로 쓸 경로. 옮긴 글은 예전 주소(Quartz 피드의 GUID)를 넘긴다 */
+  guidPath: string
   title: string
   date: string | null
   /** 마지막 수정일. 없으면 date */
@@ -33,11 +35,14 @@ export function renderFeed(items: FeedItem[], description: string): string {
     .sort((a, b) => (revised(b) ?? "").localeCompare(revised(a) ?? "", "en"))
     .map((item) => {
       const link = escapeXml(absolute(item.url))
+      const guid = escapeXml(absolute(item.guidPath))
       return [
         "    <item>",
         `      <title>${escapeXml(item.title)}</title>`,
         `      <link>${link}</link>`,
-        `      <guid isPermaLink="true">${link}</guid>`,
+        guid === link
+          ? `      <guid isPermaLink="true">${guid}</guid>`
+          : `      <guid isPermaLink="false">${guid}</guid>`,
         revised(item) ? `      <pubDate>${new Date(revised(item)!).toUTCString()}</pubDate>` : "",
         item.description ? `      <description>${escapeXml(item.description)}</description>` : "",
         ...item.tags.map((tag) => `      <category>${escapeXml(tag)}</category>`),

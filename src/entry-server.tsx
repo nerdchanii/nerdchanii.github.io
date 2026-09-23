@@ -6,8 +6,10 @@ import { STATIC_ROUTES } from "./lib/routes.ts"
 
 /** RSS 피드에 넣을 글 (최신순) */
 export function feedItems() {
-  return posts.map(({ url, title, date, updated, description, tags }) => ({
+  return posts.map(({ url, title, date, updated, description, tags, commentPath }) => ({
     url,
+    // Quartz 시절 주소(첫 alias)를 GUID로 써서 기존 구독자에게 옮긴 글이 새 글로 보이지 않게 한다.
+    guidPath: commentPath,
     title,
     date,
     updated,
