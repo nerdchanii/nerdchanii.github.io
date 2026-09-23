@@ -97,9 +97,6 @@ export function linkTextNodes(tree: Root): Set<Text> {
 
 const WIKILINK_SPAN = /!?\[\[[^\]]*?\]\]/g
 
-/** Obsidian 주석 `%% … %%` (여러 줄 가능). Quartz의 commentRegex와 같다 */
-const COMMENT = /%%[\s\S]*?%%/g
-
 /**
  * 마크다운을 파싱하기 전에 Obsidian 문법을 맞춘다. Quartz도 remark 전에 같은 처리를 했다. 코드 블록은 건드리지 않는다.
  * - `%% 주석 %%`은 지운다 (발행되는 페이지와 링크·태그 수집 모두에서 빠진다).
@@ -108,17 +105,52 @@ const COMMENT = /%%[\s\S]*?%%/g
  * 코드 블록, 인라인 코드, 수식은 건드리지 않는다.
  */
 export function preprocessObsidian(markdown: string): string {
-  const transform = (text: string) =>
-    text
-      .replace(COMMENT, "")
-      .replace(WIKILINK_SPAN, (link) => link.replace(/((^|[^\\])(\\\\)*)\|/g, "$1\\|"))
-  let out = ""
+  const escape = (text: string) =>
+    text.replace(WIKILINK_SPAN, (link) => link.replace(/((^|[^\\])(\\\\)*)\|/g, "$1\\|"))
+  const code = codeRanges(markdown, { inline: true })
+
+  // 코드 밖의 `%%`를 앞에서부터 둘씩 짝지어 주석 구간을 만든다. 주석이 코드 블록을 감싸면 그 코드도 함께 지운다.
+  // 짝이 없는 마지막 `%%`는 그대로 둔다 (Quartz의 /%%[\s\S]*?%%/와 같다).
+  const marks: number[] = []
+  let from = 0
+  for (const [start, end] of [...code, [markdown.length, markdown.length]]) {
+    for (
+      let i = markdown.indexOf("%%", from);
+      i !== -1 && i + 2 <= start;
+      i = markdown.indexOf("%%", i + 2)
+    )
+      marks.push(i)
+    from = Math.max(from, end)
+  }
+  const comments: [number, number][] = []
+  for (let i = 0; i + 1 < marks.length; i += 2) comments.push([marks[i], marks[i + 1] + 2])
+
+  // 문서를 코드/글 조각으로 나눠, 주석 구간을 뺀 나머지만 남긴다. 글 조각에만 위키링크 이스케이프를 한다.
+  const pieces: { start: number; end: number; code: boolean }[] = []
   let last = 0
-  for (const [start, end] of codeRanges(markdown, { inline: true })) {
-    out += transform(markdown.slice(last, start)) + markdown.slice(start, end)
+  for (const [start, end] of code) {
+    if (start > last) pieces.push({ start: last, end: start, code: false })
+    pieces.push({ start, end, code: true })
     last = end
   }
-  return out + transform(markdown.slice(last))
+  if (last < markdown.length) pieces.push({ start: last, end: markdown.length, code: false })
+
+  let out = ""
+  for (const piece of pieces) {
+    let cursor = piece.start
+    const keep = (end: number) => {
+      if (end <= cursor) return
+      const text = markdown.slice(cursor, end)
+      out += piece.code ? text : escape(text)
+    }
+    for (const [start, end] of comments) {
+      if (end <= cursor || start >= piece.end) continue
+      keep(Math.min(start, piece.end))
+      cursor = Math.max(cursor, Math.min(end, piece.end))
+    }
+    keep(piece.end)
+  }
+  return out
 }
 
 /**
