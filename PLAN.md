@@ -200,7 +200,7 @@ npm run build
 - [x] **Phase 1. 뼈대**: Quartz 제거, Vite + Solid + MDX 설정, SSR entry, 모든 글을 prerender해서 정적 HTML로 출력, hydration 확인
 - [x] **Phase 2. 콘텐츠 파이프라인**: 콘텐츠 인덱스, slug 규칙, 위키링크·callout·이미지·KaTeX·코드 하이라이팅(shiki), git 기반 날짜, 자동 description, frontmatter 스키마 검증(zod), 폴더 매핑과 예전 URL `aliases` 리다이렉트
 - [x] **Phase 3. 페이지**: 헤더·푸터 레이아웃, 다크모드 토글(깜빡임 없음), 연도별 글 목록, 태그 목록·태그별 페이지, 목차, 백링크, 폴더 index의 하위 폴더·글 목록, giscus 댓글
-- [ ] **Phase 4. 출력과 배포**: OG 메타, GitHub Actions 배포 (RSS `/index.xml`, `/sitemap.xml`, 리다이렉트는 먼저 반영됨)
+- [ ] **Phase 4. 출력과 배포**: 글별 OG 이미지 생성(선택), GA 결정, GitHub Actions 배포 (OG/Twitter 메타, RSS `/index.xml`, `/sitemap.xml`, 리다이렉트는 먼저 반영됨)
 - [ ] **Phase 5. 랜딩**: 레이어 UI (Three.js) + 목록 대체 화면, 프로젝트 데이터 연결
 - [ ] **Phase 6. 추가 기능**: 클라이언트 검색 등
 

@@ -2,6 +2,9 @@ export const SITE_NAME = "chanii's notes"
 export const SITE_URL = "https://nerdchanii.github.io"
 export const AUTHOR = "김예찬"
 export const GITHUB_URL = "https://github.com/nerdchanii"
+export const SITE_DESCRIPTION = "AI와 머신러닝을 공부하며 남기는 기록"
+/** 글에 이미지가 없을 때 쓰는 링크 미리보기 이미지 (public/og.png) */
+export const DEFAULT_OG_IMAGE = "/og.png"
 
 /** 헤더 메뉴 */
 export const NAV = [

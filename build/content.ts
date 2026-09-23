@@ -38,6 +38,8 @@ export type ContentEntry = {
   aliases: string[]
   /** 이 글이 링크하는 다른 글의 URL (백링크 계산용) */
   links: string[]
+  /** 링크 미리보기 이미지 (절대 URL 또는 `/_media/…`) */
+  image: string | null
   /**
    * 댓글(giscus)을 이어 붙일 경로. Quartz 시절 댓글은 그때 URL로 매핑돼 있으므로
    * 절대 경로로 적은 alias(= 옮기기 전 URL)가 있으면 그것을, 없으면 지금 URL을 쓴다.
@@ -109,9 +111,35 @@ function aliasUrl(alias: string, entryUrl: string, isIndex: boolean): string {
 }
 
 const WIKILINK = /(?<!!)\[\[([^\]|#]*)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/g
+const IMAGE_EXT = /\.(png|jpe?g|gif|webp|avif|svg)$/i
 const MD_LINK = /\]\((\/[^)\s]*)\)/g
 
 /** 본문에서 다른 글로 가는 링크(위키링크, `/`로 시작하는 마크다운 링크)의 URL을 모은다 */
+/**
+ * 링크 미리보기 이미지. frontmatter `image`가 있으면 그것을, 없으면 본문의 첫 이미지를 쓴다.
+ * 외부 URL은 그대로, content/ 안의 파일은 `/_media/…` 경로로 바꾼다.
+ */
+function previewImage(
+  explicit: string | undefined,
+  body: string,
+  entry: ContentEntry,
+  resolver: Resolver,
+): string | null {
+  const text = body.replace(/^(```|~~~)[\s\S]*?^\1/gm, "")
+  const target =
+    explicit ??
+    [...text.matchAll(/!\[\[([^\]|]+)(?:\|[^\]]*)?\]\]|!\[[^\]]*\]\(<?([^)\s>]+)>?/g)]
+      .map((m) => (m[1] ?? m[2]).trim())
+      .find((t) => /^https?:\/\//.test(t) || IMAGE_EXT.test(t.split(/[?#]/)[0]))
+  if (!target) return null
+  if (/^https?:\/\//.test(target)) return target
+  let name = target
+  try {
+    name = decodeURIComponent(target)
+  } catch {}
+  return resolver.media(name.replace(/^\.?\//, ""), entry.file) ?? null
+}
+
 function outgoingLinks(
   body: string,
   entry: ContentEntry,
@@ -173,6 +201,7 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
 
   const entries: ContentEntry[] = []
   const bodies = new Map<string, string>()
+  const images = new Map<string, string>()
   const byUrl = new Map<string, string>()
 
   // 라우터는 고정 경로를 대소문자 구분 없이 매칭하고, macOS 같은 파일 시스템도
@@ -209,6 +238,8 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
     const rawAliases = [...toList(fm.aliases), ...toList(fm.alias)]
     const oldPath = rawAliases.find((a) => a.startsWith("/"))
     bodies.set(id, body)
+    const ogImage = fm.image ?? fm.socialImage
+    if (ogImage) images.set(id, ogImage)
     entries.push({
       id,
       file,
@@ -219,13 +250,14 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
       // frontmatter 태그 뒤에 본문 `#태그`를 붙인다. 같은 태그는 한 번만 둔다.
       tags: uniqueTags([...toList(fm.tags), ...inlineTags(body)]),
       date: fm.date ? toIso(fm.date) : git.created,
-      updated: git.updated,
+      updated: fm.updated ? toIso(fm.updated) : git.updated,
       // Quartz처럼 description이 없으면 본문 앞부분으로 만든다.
       description: fm.description ?? excerpt(body),
       draft: false,
       comments: fm.comments ?? true,
       aliases: rawAliases.map((a) => aliasUrl(a, url, isIndex)),
       links: [],
+      image: null,
       commentPath: oldPath ? aliasUrl(oldPath, url, isIndex) : url,
     })
   }
@@ -240,6 +272,7 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
   const urls = new Set(entries.map((e) => e.url))
   for (const entry of entries) {
     entry.links = outgoingLinks(bodies.get(entry.id) ?? "", entry, resolver, urls)
+    entry.image = previewImage(images.get(entry.id), bodies.get(entry.id) ?? "", entry, resolver)
   }
 
   return entries

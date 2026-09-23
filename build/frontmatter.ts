@@ -24,7 +24,11 @@ export const frontmatterSchema = z
     slug: optional(text),
     tags: list,
     date: optional(date),
+    updated: optional(date),
     description: optional(z.string()),
+    /** 링크 미리보기 이미지. `socialImage`는 Quartz 시절 이름 */
+    image: optional(text),
+    socialImage: optional(text),
     draft: optional(z.boolean()),
     comments: optional(z.boolean()),
     aliases: list,

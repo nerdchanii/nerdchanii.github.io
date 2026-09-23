@@ -6,6 +6,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { NOT_FOUND_ROUTE } from "../src/lib/routes.ts"
+import { SITE_DESCRIPTION } from "../src/lib/site.ts"
 import { FEED_PATH, renderFeed, type FeedItem } from "./feed.ts"
 import { SITEMAP_PATH, renderSitemap, type SitemapItem } from "./sitemap.ts"
 
@@ -72,7 +73,7 @@ for (const [from, to] of aliases) {
   write(path.join(dist, from, "index.html"), redirectPage(to))
 }
 
-write(path.join(dist, FEED_PATH), renderFeed(feedItems(), "AI와 머신러닝을 공부하며 남기는 기록"))
+write(path.join(dist, FEED_PATH), renderFeed(feedItems(), SITE_DESCRIPTION))
 // 리다이렉트 페이지는 noindex라 sitemap에 넣지 않는다.
 write(path.join(dist, SITEMAP_PATH), renderSitemap(sitemapItems()))
 

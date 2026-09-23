@@ -1,13 +1,12 @@
-import { Title } from "@solidjs/meta"
+import Seo from "../components/Seo.tsx"
 import { A } from "@solidjs/router"
 import { For } from "solid-js"
 import { tags } from "../lib/content.ts"
-import { SITE_NAME } from "../lib/site.ts"
 
 export default function Tags() {
   return (
     <>
-      <Title>Tags · {SITE_NAME}</Title>
+      <Seo title="Tags" description="태그 목록" path="/tags" />
       <h1>Tags</h1>
       <ul class="tag-list tag-cloud">
         <For each={tags}>

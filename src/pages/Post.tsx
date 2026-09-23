@@ -1,12 +1,12 @@
-import { Meta, Title } from "@solidjs/meta"
 import { A } from "@solidjs/router"
 import { For, Show } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import Comments from "../components/Comments.tsx"
+import Seo from "../components/Seo.tsx"
 import PostList from "../components/PostList.tsx"
 import TagList from "../components/TagList.tsx"
 import { backlinks, entries, posts, type Entry } from "../lib/content.ts"
-import { SITE_NAME, dayOf, formatDate } from "../lib/site.ts"
+import { dayOf, formatDate } from "../lib/site.ts"
 
 export default function Post(props: { entry: Entry }) {
   const entry = () => props.entry
@@ -23,12 +23,15 @@ export default function Post(props: { entry: Entry }) {
 
   return (
     <article class="post">
-      <Title>
-        {entry().title} · {SITE_NAME}
-      </Title>
-      <Show when={entry().description}>
-        {(description) => <Meta name="description" content={description()} />}
-      </Show>
+      <Seo
+        title={entry().title}
+        description={entry().description}
+        path={entry().url}
+        image={entry().image}
+        article={
+          entry().isIndex ? undefined : { published: entry().date, modified: entry().updated }
+        }
+      />
 
       <header class="post-header">
         <h1>{entry().title}</h1>

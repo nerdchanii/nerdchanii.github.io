@@ -29,7 +29,10 @@ Obsidian 문법(`[[위키링크]]`, `![[이미지]]`, `> [!note]` callout)과 `$
 ---
 title: 글 제목
 slug: english-slug # 선택. 없으면 파일명이 URL이 된다
-tags: [tag]
+tags: [tag] # 본문의 #태그도 태그로 모인다
+date: 2026-09-23 # 선택. 없으면 git 첫 커밋 날짜
+updated: 2026-09-24 # 선택. 없으면 git 마지막 커밋 날짜
+image: images/cover.png # 선택. 링크 미리보기 이미지. 없으면 본문 첫 이미지, 그것도 없으면 public/og.png
 draft: true # 선택. 빌드에서 제외 (저장소에는 남는다)
 aliases: [/예전/주소] # 선택. 이 주소로 들어오면 이 글로 보낸다
 ---
