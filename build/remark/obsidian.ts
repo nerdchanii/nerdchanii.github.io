@@ -30,15 +30,17 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
       let last = 0
       for (const match of node.value.matchAll(WIKILINK)) {
         const [raw, bang, rawTarget, hash, rawLabel] = match
-        const target = rawTarget.trim()
-        const heading = hash?.slice(1).trim()
+        // `![[diagram#1.png]]`처럼 파일명에 `#`이 들어간 임베드는 제목 조각이 아니라 파일명으로 본다.
+        const embedsFile = Boolean(bang) && IMAGE_EXT.test(rawTarget + (hash ?? ""))
+        const target = (embedsFile ? rawTarget + (hash ?? "") : rawTarget).trim()
+        const heading = embedsFile ? undefined : hash?.slice(1).trim()
         const label = rawLabel?.trim()
         if (match.index > last)
           parts.push({ type: "text", value: node.value.slice(last, match.index) })
         last = match.index + raw.length
 
         // ![[image.png]] → 이미지
-        if (bang && IMAGE_EXT.test(target)) {
+        if (embedsFile) {
           const url = resolver().media(target, from)
           if (url) parts.push({ type: "image", url, alt: label || target })
           else {

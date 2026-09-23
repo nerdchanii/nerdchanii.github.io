@@ -6,6 +6,7 @@ import matter from "gray-matter"
 import { globSync } from "tinyglobby"
 import type { Plugin } from "vite"
 import { MEDIA_PREFIX, RESERVED_OUTPUT_NAMES, RESERVED_ROUTES } from "../src/lib/routes.ts"
+import { excerpt } from "./excerpt.ts"
 import { normalizePath, slugifySegment } from "./slug.ts"
 
 export const CONTENT_DIR = fileURLToPath(new URL("../content", import.meta.url))
@@ -46,7 +47,12 @@ type Frontmatter = {
 }
 
 function readFrontmatter(file: string): Frontmatter {
-  return matter(fs.readFileSync(file, "utf8")).data as Frontmatter
+  return readSource(file).data
+}
+
+function readSource(file: string): { data: Frontmatter; body: string } {
+  const { data, content } = matter(fs.readFileSync(file, "utf8"))
+  return { data: data as Frontmatter, body: content }
 }
 
 const toIso = (value: string | Date) => new Date(value).toISOString()
@@ -140,7 +146,7 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
 
   for (const id of files) {
     const file = path.join(CONTENT_DIR, id)
-    const fm = readFrontmatter(file)
+    const { data: fm, body } = readSource(file)
     // 초안은 빌드에서 빠지므로 URL 검증(예약 경로·충돌)에서도 제외한다.
     if (fm.draft) continue
     const name = path.basename(id, path.extname(id))
@@ -167,7 +173,8 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
       tags: toList(fm.tags),
       date: fm.date ? toIso(fm.date) : git.created,
       updated: git.updated,
-      description: fm.description ?? null,
+      // Quartz처럼 description이 없으면 본문 앞부분으로 만든다.
+      description: fm.description ?? excerpt(body),
       draft: false,
       comments: fm.comments ?? true,
       aliases: [...toList(fm.aliases), ...toList(fm.alias)].map((a) => aliasUrl(a, url)),
