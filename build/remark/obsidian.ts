@@ -117,7 +117,7 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
       target.url =
         found.kind === "media"
           ? found.url
-          : found.entry.url + (found.hash ? `#${headingId(found.hash)}` : "")
+          : found.entry.url + found.query + (found.hash ? `#${headingId(found.hash)}` : "")
     })
 
     visit(tree, "blockquote", (node: Blockquote) => {

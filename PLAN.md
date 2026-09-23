@@ -200,7 +200,7 @@ npm run build
 - [x] **Phase 1. 뼈대**: Quartz 제거, Vite + Solid + MDX 설정, SSR entry, 모든 글을 prerender해서 정적 HTML로 출력, hydration 확인
 - [x] **Phase 2. 콘텐츠 파이프라인**: 콘텐츠 인덱스, slug 규칙, 위키링크·callout·이미지·KaTeX·코드 하이라이팅(shiki), git 기반 날짜, 자동 description, frontmatter 스키마 검증(zod), 폴더 매핑과 예전 URL `aliases` 리다이렉트
 - [x] **Phase 3. 페이지**: 헤더·푸터 레이아웃, 다크모드 토글(깜빡임 없음), 연도별 글 목록, 태그 목록·태그별 페이지, 목차, 백링크, 폴더 index의 하위 폴더·글 목록, giscus 댓글
-- [ ] **Phase 4. 출력과 배포**: 글별 OG 이미지 생성(선택), GA 결정, GitHub Actions 배포 (OG/Twitter 메타, RSS `/index.xml`, `/sitemap.xml`, 리다이렉트는 먼저 반영됨)
+- [ ] **Phase 4. 출력과 배포**: 글별 OG 이미지 생성(선택), GitHub Actions 배포 (OG/Twitter 메타, Google Analytics, RSS `/index.xml`, `/sitemap.xml`, 리다이렉트는 먼저 반영됨)
 - [ ] **Phase 5. 랜딩**: 레이어 UI (Three.js) + 목록 대체 화면, 프로젝트 데이터 연결
 - [ ] **Phase 6. 추가 기능**: 클라이언트 검색 등
 
@@ -222,4 +222,4 @@ Phase 1~4가 끝나면 지금 블로그를 완전히 대체한다. 그 시점에
 - **head 태그**: `@solidjs/meta`의 태그는 렌더 중에만 `getAssets()`로 읽을 수 있어서, 트리 맨 끝에서 읽는다 (`src/entry-server.tsx`).
 - **로컬 확인**: `vite preview`는 `/devlog`처럼 끝에 `/`가 없는 경로에 루트 `index.html`을 돌려줘서 hydration이 깨진 것처럼 보인다. GitHub Pages처럼 동작하는 정적 서버(`python3 -m http.server -d dist`)로 확인한다.
 - **giscus**: 기존 설정은 `mapping: pathname`이다. URL이 바뀌면 기존 댓글과 연결이 끊기므로, Phase 3에서 옛 경로를 `term`으로 넘기는 방식을 검토한다. (repo `nerdchanii/nerdchanii.github.io`, category `Announcements`)
-- **분석**: 기존 Quartz 설정에 Google Analytics(`G-P68QDJ67M0`)가 있었다. 유지 여부는 Phase 4에서 정한다.
+- **분석**: Quartz와 같은 Google Analytics(`G-P68QDJ67M0`)를 유지한다. 배포 주소에서만 켜지고, 첫 페이지와 클라이언트 이동마다 page_view를 보낸다. 끄려면 `src/lib/site.ts`의 `GA_TAG_ID`를 빈 문자열로 둔다.

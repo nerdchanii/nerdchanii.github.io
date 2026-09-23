@@ -15,7 +15,8 @@ export type Resolver = {
 }
 
 export type Resolved =
-  { kind: "page"; entry: ContentEntry; hash: string | undefined } | { kind: "media"; url: string }
+  | { kind: "page"; entry: ContentEntry; query: string; hash: string | undefined }
+  | { kind: "media"; url: string }
 
 /** `https:`, `mailto:`, `//host`, `/path`, `#hash`처럼 글 기준 상대 경로가 아닌 링크 */
 export const isNotRelative = (href: string) => /^(?:[a-z][a-z\d+.-]*:|\/|#)/i.test(href)
@@ -93,7 +94,7 @@ export function createResolver(
         pageByPath.get(norm(rel)) ??
         pageByPath.get(norm(`${rel}.md`)) ??
         pageByPath.get(norm(`${rel}.mdx`))
-      if (entry) return { kind: "page", entry, hash }
+      if (entry) return { kind: "page", entry, query: rawQuery, hash }
       // `images/a#1.png`처럼 파일명에 `#`이 그대로 들어간 경우도 받아 준다 (`%23`이 맞는 표기).
       // 미디어의 `?query`, `#t=30` 같은 꼬리는 쓴 그대로 붙여 준다.
       const file = mediaByPath.get(norm(rel))

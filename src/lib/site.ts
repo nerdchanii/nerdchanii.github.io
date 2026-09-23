@@ -14,6 +14,9 @@ export const NAV = [
   { href: "/tags", label: "Tags" },
 ]
 
+/** Google Analytics 4 측정 ID. Quartz 시절과 같다. 빈 문자열로 두면 끈다. */
+export const GA_TAG_ID = "G-P68QDJ67M0"
+
 /** giscus 설정. 저장소의 Discussions(Announcements)에 댓글이 쌓인다. */
 export const GISCUS = {
   repo: "nerdchanii/nerdchanii.github.io",

@@ -1,5 +1,6 @@
 import { hydrate, render } from "solid-js/web"
 import App from "./app/App.tsx"
+import { initAnalytics } from "./lib/analytics.ts"
 import { findEntry } from "./lib/content.ts"
 
 const root = document.getElementById("app")!
@@ -10,6 +11,8 @@ const canonical = location.pathname.replace(/\/index\.html$/, "/")
 if (canonical !== location.pathname) {
   history.replaceState(history.state, "", canonical + location.search + location.hash)
 }
+
+initAnalytics()
 
 if (import.meta.env.DEV) {
   // dev 서버는 prerender된 HTML이 없으므로 그냥 렌더한다.
