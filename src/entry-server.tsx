@@ -1,10 +1,11 @@
 import { generateHydrationScript, getAssets, renderToString } from "solid-js/web"
 import App from "./app/App.tsx"
 import { entryUrls, findEntry } from "./lib/content.ts"
+import { STATIC_ROUTES } from "./lib/routes.ts"
 
 /** prerender 대상 경로. 고정 페이지 + 콘텐츠 전체 */
 export function routes(): string[] {
-  return ["/", "/blog", ...entryUrls()]
+  return [...STATIC_ROUTES, ...entryUrls()]
 }
 
 export async function render(url: string): Promise<{ html: string; head: string }> {

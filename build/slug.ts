@@ -4,11 +4,17 @@
  * macOS에서 만든 파일명은 NFD(자모 분리)일 수 있으므로 NFC로 맞춘다.
  */
 export function slugifySegment(segment: string): string {
-  return segment
+  const slug = segment
     .normalize("NFC")
     .trim()
     .replace(/\s+/g, "-")
     .replace(/[?#%\\"'<>`^{}|]/g, "")
+
+  // URL 조각은 그대로 dist/ 아래 경로가 되므로, 한 단계짜리 이름만 허용한다.
+  if (slug === "" || slug === "." || slug === ".." || slug.includes("/")) {
+    throw new Error(`사용할 수 없는 slug: ${JSON.stringify(segment)}`)
+  }
+  return slug
 }
 
 /** `/a/b/` 형태의 경로를 `/a/b`로 맞춘다. 루트는 `/`. */

@@ -5,6 +5,7 @@
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { NOT_FOUND_ROUTE } from "../src/lib/routes.ts"
 
 const root = fileURLToPath(new URL("..", import.meta.url))
 const dist = path.join(root, "dist")
@@ -23,6 +24,10 @@ function fill(page: { html: string; head: string }): string {
 }
 
 function write(file: string, content: string) {
+  // URL은 slug 단계에서 검증하지만, dist/ 밖으로 쓰는 일은 여기서 한 번 더 막는다.
+  if (!path.resolve(file).startsWith(dist + path.sep)) {
+    throw new Error(`dist/ 밖으로 쓰려고 함: ${file}`)
+  }
   fs.mkdirSync(path.dirname(file), { recursive: true })
   fs.writeFileSync(file, content)
 }
@@ -33,7 +38,7 @@ for (const url of urls) {
 }
 
 // GitHub Pages는 없는 경로에 404.html을 보여준다.
-write(path.join(dist, "404.html"), fill(await render("/404")))
+write(path.join(dist, "404.html"), fill(await render(NOT_FOUND_ROUTE)))
 // _로 시작하는 파일을 Jekyll이 무시하지 않도록 한다.
 write(path.join(dist, ".nojekyll"), "")
 
