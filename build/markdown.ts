@@ -115,13 +115,20 @@ export function preprocessObsidian(markdown: string): string {
   }
 
   // 주석을 하나씩 지우고 그때마다 다시 파싱한다. 여는 `%%`는 코드 밖에 있어야 하고,
-  // 닫는 `%%`는 코드 밖의 다음 `%%`다. 주석 안에서 연 코드 펜스가 닫히지 않아 뒤를 모두 코드로 만들면
-  // 코드 안이라도 다음 `%%`에서 닫는다 (주석이 코드 기호보다 먼저다). 짝이 없는 `%%`는 그대로 둔다.
+  // 닫는 `%%`는 코드 밖의 다음 `%%`다. 다만 주석 안에서 연 코드 펜스·수식 블록이 닫히지 않아 뒤를 모두
+  // 코드로 만든 경우에는 그 블록 안의 다음 `%%`에서 닫는다 (주석이 코드 기호보다 먼저다).
+  // 그 밖의 경우 짝이 없는 `%%`는 그대로 둔다.
   for (let from = 0; ;) {
     const open = outsideCode(from)
     if (open === -1) break
     let close = outsideCode(open + 2)
-    if (close === -1) close = doc.indexOf("%%", open + 2)
+    if (close === -1) {
+      const raw = doc.indexOf("%%", open + 2)
+      const block =
+        raw === -1 ? undefined : ranges.find(([start, end]) => raw >= start && raw < end)
+      if (block && block[0] > open && block[2] && isUnclosedBlock(doc.slice(block[0], block[1])))
+        close = raw
+    }
     if (close === -1) break
     doc = doc.slice(0, open) + doc.slice(close + 2)
     ranges = codeRanges(doc, { inline: true })
@@ -138,6 +145,16 @@ export function preprocessObsidian(markdown: string): string {
   return out + escapeWikilinkPipes(doc.slice(last))
 }
 
+/** 펜스 코드·수식 블록이 닫는 줄 없이 문서 끝까지 이어졌는지 본다 (인용·목록 들여쓰기는 떼고 본다) */
+function isUnclosedBlock(text: string): boolean {
+  const lines = text.split("\n").map((line) => line.replace(/^[ \t>]*/, ""))
+  const fence = /^(`{3,}|~{3,}|\${2,})/.exec(lines[0])
+  if (!fence) return false
+  if (lines.length < 2) return true
+  const close = lines[lines.length - 1].trim()
+  return !(close.startsWith(fence[1]) && /^([`~$])\1*$/.test(close))
+}
+
 const escapeWikilinkPipes = (text: string) =>
   text.replace(WIKILINK_SPAN, (link) => link.replace(/((^|[^\\])(\\\\)*)\|/g, "$1\\|"))
 
@@ -146,18 +163,21 @@ const escapeWikilinkPipes = (text: string) =>
  * ```` ```` ```` 네 개짜리 펜스 안의 ``` 같은 경우도 CommonMark 규칙대로 처리된다.
  * `inline`이면 인라인 코드·수식도 포함한다.
  */
-export function codeRanges(markdown: string, { inline = false } = {}): [number, number][] {
+export function codeRanges(
+  markdown: string,
+  { inline = false } = {},
+): [start: number, end: number, block: boolean][] {
   const types = new Set(inline ? ["code", "math", "inlineCode", "inlineMath"] : ["code", "math"])
   const tree = fromMarkdown(markdown, {
     extensions: [gfm(), math()],
     mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()],
   })
-  const ranges: [number, number][] = []
+  const ranges: [number, number, boolean][] = []
   visit(tree, (node) => {
     if (types.has(node.type) && node.position) {
       const { start, end } = node.position
       if (start.offset !== undefined && end.offset !== undefined)
-        ranges.push([start.offset, end.offset])
+        ranges.push([start.offset, end.offset, node.type === "code" || node.type === "math"])
       return SKIP
     }
   })
