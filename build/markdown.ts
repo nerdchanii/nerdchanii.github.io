@@ -95,9 +95,7 @@ export function linkTextNodes(tree: Root): Set<Text> {
   return found
 }
 
-/** GFM 표. Quartz의 tableRegex와 같다 */
-const TABLE = /^\|([^\n])+\|\n(\|)( ?:?-{3,}:? ?\|)+\n(\|([^\n])+\|\n?)+/gm
-const TABLE_WIKILINK = /!?\[\[[^\]]*?\]\]/g
+const WIKILINK_SPAN = /!?\[\[[^\]]*?\]\]/g
 
 /** Obsidian 주석 `%% … %%` (여러 줄 가능). Quartz의 commentRegex와 같다 */
 const COMMENT = /%%[\s\S]*?%%/g
@@ -105,19 +103,18 @@ const COMMENT = /%%[\s\S]*?%%/g
 /**
  * 마크다운을 파싱하기 전에 Obsidian 문법을 맞춘다. Quartz도 remark 전에 같은 처리를 했다. 코드 블록은 건드리지 않는다.
  * - `%% 주석 %%`은 지운다 (발행되는 페이지와 링크·태그 수집 모두에서 빠진다).
- * - 표 안의 위키링크 `[[글|표시]]`의 `|`를 `\|`로 바꾼다. 그대로 두면 GFM이 열 구분자로 읽어 표와 링크가 깨진다.
- *   파싱 뒤 text 노드에는 `|`로 돌아온다.
+ * - 위키링크 `[[글|표시]]`의 `|`를 `\|`로 바꾼다. 표 안에서 GFM이 열 구분자로 읽지 않게 하려는 것이다.
+ *   바깥 파이프가 없는 표(`a | b`)도 있어서 표를 찾지 않고 모든 위키링크에 적용한다. `\|`는 파싱 뒤 `|`로 돌아온다.
+ * 코드 블록, 인라인 코드, 수식은 건드리지 않는다.
  */
 export function preprocessObsidian(markdown: string): string {
   const transform = (text: string) =>
     text
       .replace(COMMENT, "")
-      .replace(TABLE, (table) =>
-        table.replace(TABLE_WIKILINK, (link) => link.replace(/((^|[^\\])(\\\\)*)\|/g, "$1\\|")),
-      )
+      .replace(WIKILINK_SPAN, (link) => link.replace(/((^|[^\\])(\\\\)*)\|/g, "$1\\|"))
   let out = ""
   let last = 0
-  for (const [start, end] of codeBlockRanges(markdown)) {
+  for (const [start, end] of codeRanges(markdown, { inline: true })) {
     out += transform(markdown.slice(last, start)) + markdown.slice(start, end)
     last = end
   }
@@ -127,16 +124,17 @@ export function preprocessObsidian(markdown: string): string {
 /**
  * 코드 블록(펜스·들여쓰기, 인용·목록 안 포함)과 수식 블록의 원문 위치. 마크다운 파서로 찾으므로
  * ```` ```` ```` 네 개짜리 펜스 안의 ``` 같은 경우도 CommonMark 규칙대로 처리된다.
- * 표 인식이 깨지지 않도록 인라인 코드는 보호하지 않는다 (Quartz도 전체 원문에 적용했다).
+ * `inline`이면 인라인 코드·수식도 포함한다.
  */
-export function codeBlockRanges(markdown: string): [number, number][] {
+export function codeRanges(markdown: string, { inline = false } = {}): [number, number][] {
+  const types = new Set(inline ? ["code", "math", "inlineCode", "inlineMath"] : ["code", "math"])
   const tree = fromMarkdown(markdown, {
     extensions: [gfm(), math()],
     mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()],
   })
   const ranges: [number, number][] = []
   visit(tree, (node) => {
-    if ((node.type === "code" || node.type === "math") && node.position) {
+    if (types.has(node.type) && node.position) {
       const { start, end } = node.position
       if (start.offset !== undefined && end.offset !== undefined)
         ranges.push([start.offset, end.offset])
