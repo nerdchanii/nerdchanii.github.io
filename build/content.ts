@@ -29,6 +29,8 @@ export type ContentEntry = {
   description: string | null
   draft: boolean
   comments: boolean
+  /** 예전 URL. 이 경로들에는 `url`로 보내는 리다이렉트 페이지를 만든다 */
+  aliases: string[]
 }
 
 type Frontmatter = {
@@ -39,6 +41,8 @@ type Frontmatter = {
   description?: string
   draft?: boolean
   comments?: boolean
+  aliases?: string | string[]
+  alias?: string | string[]
 }
 
 function readFrontmatter(file: string): Frontmatter {
@@ -75,6 +79,22 @@ function gitDates(file: string) {
   return result
 }
 
+const toList = (value: string | string[] | undefined) =>
+  value === undefined ? [] : Array.isArray(value) ? value : [value]
+
+/**
+ * frontmatter alias를 사이트 경로로 바꾼다. Quartz와 같은 규칙을 따른다.
+ * `./`, `../`로 시작하면 글이 있는 폴더 기준, 그 밖에는 사이트 루트 기준이다.
+ * 각 조각은 글 URL과 같은 slug 규칙을 거친다 (`MCQA Project 회고` → `/MCQA-Project-회고`).
+ */
+function aliasUrl(alias: string, entryUrl: string): string {
+  const raw = alias.trim().replace(/\.mdx?$/i, "")
+  const base = /^\.{1,2}\//.test(raw) ? path.posix.dirname(entryUrl) : "/"
+  const joined = path.posix.normalize(path.posix.join(base, raw))
+  const segments = joined.split("/").filter(Boolean).map(slugifySegment)
+  return normalizePath(segments.join("/"))
+}
+
 /**
  * content/ 아래의 모든 글을 스캔해서 URL이 확정된 목록을 만든다.
  * `withDates`가 false면 git을 호출하지 않는다 (링크 해석처럼 날짜가 필요 없을 때).
@@ -100,6 +120,18 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
   const entries: ContentEntry[] = []
   const byUrl = new Map<string, string>()
 
+  // 라우터는 고정 경로를 대소문자 구분 없이 매칭하고, macOS 같은 파일 시스템도
+  // 대소문자를 구분하지 않으므로 검증은 소문자로 한다.
+  const claim = (url: string, owner: string) => {
+    const key = url.toLowerCase()
+    if (RESERVED_ROUTES.includes(key) || RESERVED_OUTPUT_NAMES.includes(key.split("/")[1])) {
+      throw new Error(`예약된 경로와 겹치는 글: ${url} ← ${owner}`)
+    }
+    const existing = byUrl.get(key)
+    if (existing) throw new Error(`URL 충돌: ${url} ← ${existing}, ${owner}`)
+    byUrl.set(key, owner)
+  }
+
   for (const id of files) {
     const file = path.join(CONTENT_DIR, id)
     const fm = readFrontmatter(file)
@@ -116,15 +148,7 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
       isIndex ? dirUrl(dir) : `${dirUrl(dir)}/${slugifySegment(fm.slug ?? name)}`,
     )
 
-    // 라우터는 고정 경로를 대소문자 구분 없이 매칭하고, macOS 같은 파일 시스템도
-    // 대소문자를 구분하지 않으므로 검증은 소문자로 한다.
-    const key = url.toLowerCase()
-    if (RESERVED_ROUTES.includes(key) || RESERVED_OUTPUT_NAMES.includes(key.split("/")[1])) {
-      throw new Error(`예약된 경로와 겹치는 글: ${url} ← ${id}`)
-    }
-    const existing = byUrl.get(key)
-    if (existing) throw new Error(`URL 충돌: ${url} ← ${existing}, ${id}`)
-    byUrl.set(key, id)
+    claim(url, id)
 
     const git = withDates ? gitDates(file) : { created: null, updated: null }
     entries.push({
@@ -140,7 +164,14 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
       description: fm.description ?? null,
       draft: false,
       comments: fm.comments ?? true,
+      aliases: [...toList(fm.aliases), ...toList(fm.alias)].map((a) => aliasUrl(a, url)),
     })
+  }
+
+  // alias는 모든 글 URL이 정해진 뒤에 검증해야 글과의 충돌을 빠짐없이 잡는다.
+  for (const entry of entries) {
+    entry.aliases = [...new Set(entry.aliases)].filter((a) => a !== entry.url)
+    for (const alias of entry.aliases) claim(alias, `${entry.id} (alias)`)
   }
 
   return entries

@@ -29,3 +29,8 @@ export function findEntry(pathname: string): Entry | undefined {
 export function entryUrls(): string[] {
   return entries.map((e) => e.url)
 }
+
+/** 예전 URL → 현재 URL. prerender가 리다이렉트 페이지로 출력한다 */
+export function redirects(): [from: string, to: string][] {
+  return entries.flatMap((e) => e.aliases.map((alias): [string, string] => [alias, e.url]))
+}

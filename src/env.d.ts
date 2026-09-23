@@ -15,6 +15,8 @@ declare module "virtual:content" {
     description: string | null
     draft: boolean
     comments: boolean
+    /** 예전 URL (리다이렉트 페이지로 출력) */
+    aliases: string[]
     /** 본문. 글마다 별도 청크로 lazy 로드된다. */
     Component: Component & { preload: () => Promise<unknown> }
   }
