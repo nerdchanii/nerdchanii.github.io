@@ -275,8 +275,7 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
     // Quartz는 permalink를 alias 목록에 더했다. 옮기기 전 주소(commentPath)를 찾을 때는 쓰지 않는다.
     const permalink = fm.permalink?.trim()
     const oldPath = rawAliases.find((a) => a.startsWith("/"))
-    // Obsidian 전처리(주석, 위키링크 이스케이프)는 .md 노트에만 적용한다. .mdx는 MDX 문법으로 읽어서
-    // import/export와 `{식}` 안의 글자를 링크·태그로 세지 않는다.
+    // .mdx는 MDX 문법으로 읽어서 import/export, `{식}`, JSX 태그 안의 글자를 링크·태그로 세지 않는다.
     const mdx = file.endsWith(".mdx")
     const refs = scanBody(parseMarkdown(body, { mdx }))
     bodyRefs.set(id, refs)
@@ -298,7 +297,7 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
       date: toIsoOr(fm.date ?? fm.created ?? fm.published ?? fm.publishDate, git.created),
       updated: toIsoOr(fm.updated ?? fm.modified ?? fm.lastmod ?? fm["last-modified"], git.updated),
       // Quartz처럼 description이 없으면 본문 앞부분으로 만든다.
-      description: fm.description ?? excerpt(mdx ? body : preprocessObsidian(body), { mdx }),
+      description: fm.description ?? excerpt(preprocessObsidian(body, { mdx }), { mdx }),
       draft: false,
       comments: fm.comments ?? true,
       aliases: [...rawAliases, ...(permalink ? [permalink] : [])].map((a) =>

@@ -33,8 +33,10 @@ export default defineConfig({
       name: "obsidian-preprocess",
       enforce: "pre",
       transform(code, id) {
-        // .mdx는 JS/JSX 영역이 있어 건드리지 않는다.
-        if (id.startsWith(CONTENT_DIR) && id.endsWith(".md")) return preprocessObsidian(code)
+        // frontmatter와 코드는 건드리지 않는다. .mdx는 import/export, `{식}`, JSX 태그도 건드리지 않는다.
+        if (!id.startsWith(CONTENT_DIR)) return
+        if (id.endsWith(".md")) return preprocessObsidian(code)
+        if (id.endsWith(".mdx")) return preprocessObsidian(code, { mdx: true })
       },
     },
     {

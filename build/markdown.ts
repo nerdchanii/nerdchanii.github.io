@@ -4,9 +4,11 @@
  */
 import type { Root, Text } from "mdast"
 import { fromMarkdown } from "mdast-util-from-markdown"
+import { frontmatterFromMarkdown } from "mdast-util-frontmatter"
 import { gfmFromMarkdown } from "mdast-util-gfm"
 import { mdxFromMarkdown } from "mdast-util-mdx"
 import { mathFromMarkdown } from "mdast-util-math"
+import { frontmatter } from "micromark-extension-frontmatter"
 import { gfm } from "micromark-extension-gfm"
 import { math } from "micromark-extension-math"
 import { mdxjs } from "micromark-extension-mdxjs"
@@ -104,11 +106,12 @@ const WIKILINK_SPAN = /!?\[\[[^\]]*?\]\]/g
  * - `%% 주석 %%`은 지운다 (발행되는 페이지와 링크·태그 수집 모두에서 빠진다).
  * - 위키링크 `[[글|표시]]`의 `|`를 `\|`로 바꾼다. 표 안에서 GFM이 열 구분자로 읽지 않게 하려는 것이다.
  *   바깥 파이프가 없는 표(`a | b`)도 있어서 표를 찾지 않고 모든 위키링크에 적용한다. `\|`는 파싱 뒤 `|`로 돌아온다.
- * 코드 블록, 인라인 코드, 수식은 건드리지 않는다.
+ * 코드 블록, 인라인 코드, 수식, YAML frontmatter는 건드리지 않는다.
+ * `mdx`면 MDX 문법으로 읽어서 import/export, `{식}`, JSX 태그도 건드리지 않는다 (JSX 안의 글은 처리한다).
  */
-export function preprocessObsidian(markdown: string): string {
+export function preprocessObsidian(markdown: string, { mdx = false } = {}): string {
   let doc = markdown
-  let ranges = codeRanges(doc, { inline: true })
+  let ranges = codeRanges(doc, { inline: true, mdx })
   const outsideCode = (from: number) => {
     for (let i = doc.indexOf("%%", from); i !== -1; i = doc.indexOf("%%", i + 2)) {
       if (!ranges.some(([start, end]) => i >= start && i < end)) return i
@@ -133,7 +136,7 @@ export function preprocessObsidian(markdown: string): string {
     }
     if (close === -1) break
     doc = doc.slice(0, open) + doc.slice(close + 2)
-    ranges = codeRanges(doc, { inline: true })
+    ranges = codeRanges(doc, { inline: true, mdx })
     from = open
   }
 
@@ -166,20 +169,26 @@ const escapeWikilinkPipes = (text: string) =>
  */
 function parse(markdown: string, mdx: boolean): Root {
   return fromMarkdown(markdown, {
-    extensions: mdx ? [mdxjs(), gfm(), math()] : [gfm(), math()],
-    mdastExtensions: mdx
-      ? [mdxFromMarkdown(), gfmFromMarkdown(), mathFromMarkdown()]
-      : [gfmFromMarkdown(), mathFromMarkdown()],
+    extensions: [frontmatter(), ...(mdx ? [mdxjs()] : []), gfm(), math()],
+    mdastExtensions: [
+      frontmatterFromMarkdown(),
+      ...(mdx ? [mdxFromMarkdown()] : []),
+      gfmFromMarkdown(),
+      mathFromMarkdown(),
+    ],
   })
 }
 
 /** MDX에서 본문이 아니라 프로그램인 부분 (import/export, `{식}`) */
 const MDX_PROGRAM = ["mdxjsEsm", "mdxFlowExpression", "mdxTextExpression"]
 
+/** MDX JSX 요소. 태그 부분만 코드로 보고 안의 글은 본문으로 둔다 */
+const MDX_JSX = ["mdxJsxFlowElement", "mdxJsxTextElement"]
+
 /**
- * 코드 블록(펜스·들여쓰기, 인용·목록 안 포함)과 수식 블록의 원문 위치. 마크다운 파서로 찾으므로
+ * 코드 블록(펜스·들여쓰기, 인용·목록 안 포함), 수식 블록, YAML frontmatter의 원문 위치. 마크다운 파서로 찾으므로
  * ```` ```` ```` 네 개짜리 펜스 안의 ``` 같은 경우도 CommonMark 규칙대로 처리된다.
- * `inline`이면 인라인 코드·수식도 포함한다. `mdx`면 MDX 프로그램 부분도 포함한다.
+ * `inline`이면 인라인 코드·수식도 포함한다. `mdx`면 MDX 프로그램 부분과 JSX 태그(속성 포함)도 포함한다.
  */
 export function codeRanges(
   markdown: string,
@@ -188,25 +197,38 @@ export function codeRanges(
   const types = new Set([
     "code",
     "math",
+    "yaml",
     ...(inline ? ["inlineCode", "inlineMath"] : []),
     ...(mdx ? MDX_PROGRAM : []),
   ])
   const tree = parse(markdown, mdx)
   const ranges: [number, number, boolean][] = []
   visit(tree, (node) => {
-    if (types.has(node.type) && node.position) {
-      const { start, end } = node.position
-      if (start.offset !== undefined && end.offset !== undefined)
-        ranges.push([start.offset, end.offset, node.type === "code" || node.type === "math"])
+    if (!node.position) return
+    const start = node.position.start.offset
+    const end = node.position.end.offset
+    if (start === undefined || end === undefined) return
+    if (types.has(node.type)) {
+      ranges.push([start, end, node.type === "code" || node.type === "math"])
       return SKIP
+    }
+    if (mdx && MDX_JSX.includes(node.type) && "children" in node) {
+      // 여는 태그와 닫는 태그만 막고, 자식(글)은 계속 살펴본다.
+      const first = node.children[0]?.position?.start.offset
+      const last = node.children.at(-1)?.position?.end.offset
+      if (first === undefined || last === undefined) {
+        ranges.push([start, end, false])
+        return SKIP
+      }
+      ranges.push([start, first, false], [last, end, false])
     }
   })
   return ranges.sort((a, b) => a[0] - b[0])
 }
 
-/** .md 노트는 Obsidian 전처리를 거쳐 읽는다. `mdx`(.mdx)는 전처리 없이 MDX 문법으로 읽는다 */
+/** Obsidian 전처리를 거쳐 읽는다. `mdx`(.mdx)면 MDX 문법으로 읽는다 */
 export function parseMarkdown(markdown: string, { mdx = false } = {}): Root {
-  return mdx ? parse(markdown, true) : parse(preprocessObsidian(markdown), false)
+  return parse(preprocessObsidian(markdown, { mdx }), mdx)
 }
 
 /** 본문에 보이는 순서대로 나오는 참조. 코드·수식은 text 노드가 아니므로 저절로 빠진다. */
