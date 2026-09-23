@@ -2,13 +2,13 @@
  * 빌드 단계에서 글 본문을 읽는 도구. 렌더링(remark)과 같은 파서로 mdast를 만들어서,
  * 코드·수식 안의 글자를 링크나 태그로 잘못 읽지 않게 한다.
  */
-import type { Root } from "mdast"
+import type { Root, Text } from "mdast"
 import { fromMarkdown } from "mdast-util-from-markdown"
 import { gfmFromMarkdown } from "mdast-util-gfm"
 import { mathFromMarkdown } from "mdast-util-math"
 import { gfm } from "micromark-extension-gfm"
 import { math } from "micromark-extension-math"
-import { visit } from "unist-util-visit"
+import { SKIP, visit } from "unist-util-visit"
 
 /** `[[글]]`, `![[파일]]`, `[[글#제목|표시]]`: 1=`!`, 2=대상, 3=`#제목`, 4=표시 */
 export const WIKILINK = /(!?)\[\[([^\]|#]*)(#[^\]|]*)?(?:\|([^\]]*))?\]\]/g
@@ -47,9 +47,21 @@ export function splitWikilink(bang: string, rawTarget: string, hash: string | un
   }
 }
 
-/** 링크 글자(`[글자](…)`, `[글자][ref]`)인지. 그 안의 위키링크·태그는 링크로 바꾸지 않는다 (a 안에 a가 생긴다). */
-export const isLinkText = (parent: { type: string } | undefined) =>
-  parent?.type === "link" || parent?.type === "linkReference"
+/**
+ * 링크(`[글자](…)`, `[글자][ref]`) 안의 text 노드. `[**#태그**](…)`처럼 서식에 한 겹 더 싸여 있어도 찾는다.
+ * 그 안의 위키링크·태그는 링크로 바꾸지 않는다 (a 안에 a가 생긴다).
+ */
+export function linkTextNodes(tree: Root): Set<Text> {
+  const found = new Set<Text>()
+  visit(tree, (node) => {
+    if (node.type !== "link" && node.type !== "linkReference") return
+    visit(node, "text", (text) => {
+      found.add(text)
+    })
+    return SKIP
+  })
+  return found
+}
 
 export function parseMarkdown(markdown: string): Root {
   return fromMarkdown(markdown, {
@@ -73,7 +85,8 @@ export function scanBody(tree: Root): BodyRef[] {
   })
 
   const refs: BodyRef[] = []
-  visit(tree, (node, _index, parent) => {
+  const inLink = linkTextNodes(tree)
+  visit(tree, (node) => {
     if (node.type === "link") refs.push({ kind: "link", url: node.url })
     else if (node.type === "image") refs.push({ kind: "image", url: node.url })
     else if (node.type === "linkReference" || node.type === "imageReference") {
@@ -82,7 +95,7 @@ export function scanBody(tree: Root): BodyRef[] {
         refs.push({ kind: node.type === "linkReference" ? "link" : "image", url })
     } else if (node.type === "text") {
       // 링크 글자 안은 렌더할 때도 위키링크·태그로 바꾸지 않는다.
-      if (isLinkText(parent)) return
+      if (inLink.has(node)) return
       for (const [, bang, rawTarget, hash] of node.value.matchAll(WIKILINK)) {
         refs.push({ kind: "wikilink", ...splitWikilink(bang, rawTarget, hash) })
       }

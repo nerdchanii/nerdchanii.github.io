@@ -21,10 +21,11 @@ import type {
 import { SKIP, visit } from "unist-util-visit"
 import type { VFile } from "vfile"
 import { tagUrl } from "../../src/lib/tags.ts"
-import { isLinkText, matchTags, splitWikilink, WIKILINK } from "../markdown.ts"
+import { linkTextNodes, matchTags, splitWikilink, WIKILINK } from "../markdown.ts"
 import { isNotRelative, type Resolver } from "../resolve.ts"
 
-const CALLOUT = /^\[!(\w+)\][+-]?[ \t]*([^\n]*)\n?/
+/** `[!type]`, `[!multi-column]`, `[!note|meta]`, 접기 표시 `+`/`-` (Quartz와 같은 규칙) */
+const CALLOUT = /^\[!([\w-]+)(?:\|([^\]]*))?\][+-]?[ \t]*/
 
 /** rehype-slug와 같은 규칙으로 제목 anchor를 만든다 */
 const headingId = (heading: string) => new GithubSlugger().slug(heading.trim())
@@ -34,9 +35,10 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
     const from = file.path
     const warn = (message: string) => console.warn(`[obsidian] ${file.path}: ${message}`)
 
+    // 링크 글자 안은 그대로 둔다 (scanBody와 같은 규칙).
+    const inLink = linkTextNodes(tree)
     visit(tree, "text", (node: Text, index, parent) => {
-      // 링크 글자 안은 그대로 둔다 (scanBody와 같은 규칙).
-      if (!parent || index === undefined || isLinkText(parent) || !node.value.includes("[[")) return
+      if (!parent || index === undefined || inLink.has(node) || !node.value.includes("[[")) return
 
       const parts: PhrasingContent[] = []
       let last = 0
@@ -82,9 +84,10 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
       return [SKIP, index + parts.length]
     })
 
-    // 위키링크를 바꾼 뒤에 돈다. 링크 안의 글자는 건너뛴다.
+    // 위키링크를 바꾼 뒤에 돈다. 위키링크가 만든 링크를 포함해 링크 안의 글자는 건너뛴다.
+    const inLinkAfter = linkTextNodes(tree)
     visit(tree, "text", (node: Text, index, parent) => {
-      if (!parent || index === undefined || isLinkText(parent)) return
+      if (!parent || index === undefined || inLinkAfter.has(node)) return
       const found = matchTags(node.value)
       if (found.length === 0) return
 
@@ -123,27 +126,60 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
     visit(tree, "blockquote", (node: Blockquote) => {
       const first = node.children[0]
       if (first?.type !== "paragraph") return
-      const text = first.children[0]
-      if (text?.type !== "text") return
-      const match = CALLOUT.exec(text.value)
+      const head = first.children[0]
+      if (head?.type !== "text") return
+      const match = CALLOUT.exec(head.value)
       if (!match) return
 
-      const [marker, type, title] = match
+      const [marker, type, metadata] = match
       const kind = type.toLowerCase()
-      text.value = text.value.slice(marker.length)
-      if (text.value === "") first.children.shift()
-      if (first.children.length === 0) node.children.shift()
+
+      // 마커 뒤부터 첫 줄바꿈까지가 제목이다. `**굵게**` 같은 서식 노드도 제목에 그대로 둔다.
+      const rest: PhrasingContent[] = [
+        { type: "text", value: head.value.slice(marker.length) },
+        ...first.children.slice(1),
+      ]
+      const title: PhrasingContent[] = []
+      const body: PhrasingContent[] = []
+      for (const child of rest) {
+        if (body.length > 0 || title.includes(LINE_END)) body.push(child)
+        else if (child.type === "break") title.push(LINE_END)
+        else if (child.type === "text" && child.value.includes("\n")) {
+          const cut = child.value.indexOf("\n")
+          title.push({ type: "text", value: child.value.slice(0, cut) }, LINE_END)
+          const after = child.value.slice(cut + 1)
+          if (after) body.push({ type: "text", value: after })
+        } else title.push(child)
+      }
+      const titleChildren = title.filter(
+        (child) => child !== LINE_END && !(child.type === "text" && child.value.trim() === ""),
+      )
+
+      if (body.length > 0) first.children = body
+      else node.children.shift()
 
       const titleNode: Paragraph = {
         type: "paragraph",
         data: { hProperties: { className: ["callout-title"] } },
-        children: [{ type: "text", value: title || kind[0].toUpperCase() + kind.slice(1) }],
+        children:
+          titleChildren.length > 0
+            ? titleChildren
+            : [{ type: "text", value: kind[0].toUpperCase() + kind.slice(1).replace(/-/g, " ") }],
       }
       node.children.unshift(titleNode)
-      node.data = { ...node.data, hProperties: { className: ["callout", `callout-${kind}`] } }
+      node.data = {
+        ...node.data,
+        hProperties: {
+          className: ["callout", `callout-${kind}`],
+          ...(metadata ? { dataCalloutMetadata: metadata.trim() } : {}),
+        },
+      }
     })
   }
 }
+
+/** 콜아웃 제목 줄의 끝을 표시하는 자리표시자 (결과에는 남지 않는다) */
+const LINE_END: PhrasingContent = { type: "text", value: "" }
 
 function link(url: string, value: string): PhrasingContent {
   return { type: "link", url, children: [{ type: "text", value }] }
