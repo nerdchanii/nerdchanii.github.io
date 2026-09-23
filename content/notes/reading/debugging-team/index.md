@@ -5,6 +5,8 @@ tags:
   - reading-log
   - book
 comments: false
+aliases:
+  - "/reading/debugging-team"
 ---
 
 # 

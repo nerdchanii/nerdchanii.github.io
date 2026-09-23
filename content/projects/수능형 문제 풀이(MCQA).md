@@ -2,6 +2,7 @@
 aliases:
   - MCQA Project 회고
   - Generative Based MCQA
+  - "/project/회고/수능형-문제-풀이(MCQA)"
 tags:
   - MCQA
   - boostcamp

@@ -5,6 +5,8 @@ tags:
   - book
   - reading-log
   - debugging-team
+aliases:
+  - "/reading/debugging-team/01-intro"
 ---
 > [!comment] 읽기전에
 > 이 글은 《디버깅팀》을 읽으면서 실시간으로 남기는 러프한 읽기 노트입니다. 서평보단 그때그때 떠오른 생각들을 기록한 메모에 가깝습니다.

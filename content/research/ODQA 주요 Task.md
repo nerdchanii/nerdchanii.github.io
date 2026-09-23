@@ -2,6 +2,8 @@
 tags:
   - ODQA
   - MRC
+aliases:
+  - "/project/memo/ODQA-주요-Task"
 ---
 ## MRC(Machine Reading Comprehension)
 

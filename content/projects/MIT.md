@@ -6,6 +6,8 @@ tags:
   - FunctionCalling
   - HITL
   - MIT
+aliases:
+  - "/project/회고/MIT"
 ---
 
 ## 머릿말
