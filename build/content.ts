@@ -14,7 +14,14 @@ import {
 import { tagSlug } from "../src/lib/tags.ts"
 import { excerpt } from "./excerpt.ts"
 import { parseFrontmatter, type Frontmatter } from "./frontmatter.ts"
-import { embedKind, IMAGE_EXT, parseMarkdown, scanBody, type BodyRef } from "./markdown.ts"
+import {
+  IMAGE_EXT,
+  markdownMediaKind,
+  parseMarkdown,
+  preprocessObsidian,
+  scanBody,
+  type BodyRef,
+} from "./markdown.ts"
 import { createResolver, type Resolver } from "./resolve.ts"
 import { normalizePath, slugifySegment } from "./slug.ts"
 
@@ -148,7 +155,7 @@ function previewImage(
   for (const ref of refs) {
     const found =
       // `![](clip.mp4)`처럼 영상·소리·PDF를 가리키는 이미지 문법은 미리보기 이미지로 쓰지 않는다.
-      ref.kind === "image" && (embedKind(ref.url.split(/[?#]/)[0]) ?? "image") === "image"
+      ref.kind === "image" && markdownMediaKind(ref.url) === "image"
         ? fromUrl(ref.url)
         : ref.kind === "wikilink" && ref.embedsFile && IMAGE_EXT.test(ref.target)
           ? resolver.media(ref.target, entry.file)
@@ -280,7 +287,7 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
       date: fm.date ? toIso(fm.date) : git.created,
       updated: fm.updated ? toIso(fm.updated) : git.updated,
       // Quartz처럼 description이 없으면 본문 앞부분으로 만든다.
-      description: fm.description ?? excerpt(body),
+      description: fm.description ?? excerpt(preprocessObsidian(body)),
       draft: false,
       comments: fm.comments ?? true,
       aliases: rawAliases.map((a) => aliasUrl(a, url, isIndex)),

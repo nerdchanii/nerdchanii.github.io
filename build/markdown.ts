@@ -21,6 +21,16 @@ const PDF_EXT = /\.pdf$/i
 
 export type EmbedKind = "image" | "video" | "audio" | "pdf"
 
+/** Quartz enableVideoEmbed가 `![](…)`를 영상으로 바꾸던 확장자 */
+const MARKDOWN_VIDEO = /\.(mp4|webm|ogg|avi|mov|flv|wmv|mkv|mpg|mpeg|3gp|m4v)$/i
+
+/** 마크다운 이미지 문법 `![](url)`이 가리키는 파일 종류. 확장자를 모르면 이미지로 본다 */
+export function markdownMediaKind(url: string): EmbedKind {
+  const path = url.split(/[?#]/)[0]
+  if (MARKDOWN_VIDEO.test(path)) return "video"
+  return embedKind(path) ?? "image"
+}
+
 /** `![[파일]]`로 임베드할 수 있는 파일이면 그 종류를 돌려준다 */
 export function embedKind(name: string): EmbedKind | undefined {
   if (IMAGE_EXT.test(name)) return "image"
@@ -90,26 +100,33 @@ const TABLE = /^\|([^\n])+\|\n(\|)( ?:?-{3,}:? ?\|)+\n(\|([^\n])+\|\n?)+/gm
 const TABLE_WIKILINK = /!?\[\[[^\]]*?\]\]/g
 const FENCE = /^(```|~~~)[\s\S]*?^\1[^\n]*$/gm
 
+/** Obsidian 주석 `%% … %%` (여러 줄 가능). Quartz의 commentRegex와 같다 */
+const COMMENT = /%%[\s\S]*?%%/g
+
 /**
- * 표 안의 위키링크 `[[글|표시]]`의 `|`를 `\|`로 바꾼다. 그대로 두면 GFM이 열 구분자로 읽어 표와 링크가 깨진다.
- * 파싱 뒤 text 노드에는 `|`로 돌아온다. Quartz도 remark 전에 같은 처리를 했다. 코드 블록은 건드리지 않는다.
+ * 마크다운을 파싱하기 전에 Obsidian 문법을 맞춘다. Quartz도 remark 전에 같은 처리를 했다. 코드 블록은 건드리지 않는다.
+ * - `%% 주석 %%`은 지운다 (발행되는 페이지와 링크·태그 수집 모두에서 빠진다).
+ * - 표 안의 위키링크 `[[글|표시]]`의 `|`를 `\|`로 바꾼다. 그대로 두면 GFM이 열 구분자로 읽어 표와 링크가 깨진다.
+ *   파싱 뒤 text 노드에는 `|`로 돌아온다.
  */
-export function escapeTableWikilinks(markdown: string): string {
-  const escapeTables = (text: string) =>
-    text.replace(TABLE, (table) =>
-      table.replace(TABLE_WIKILINK, (link) => link.replace(/((^|[^\\])(\\\\)*)\|/g, "$1\\|")),
-    )
+export function preprocessObsidian(markdown: string): string {
+  const transform = (text: string) =>
+    text
+      .replace(COMMENT, "")
+      .replace(TABLE, (table) =>
+        table.replace(TABLE_WIKILINK, (link) => link.replace(/((^|[^\\])(\\\\)*)\|/g, "$1\\|")),
+      )
   let out = ""
   let last = 0
   for (const fence of markdown.matchAll(FENCE)) {
-    out += escapeTables(markdown.slice(last, fence.index)) + fence[0]
+    out += transform(markdown.slice(last, fence.index)) + fence[0]
     last = fence.index + fence[0].length
   }
-  return out + escapeTables(markdown.slice(last))
+  return out + transform(markdown.slice(last))
 }
 
 export function parseMarkdown(markdown: string): Root {
-  return fromMarkdown(escapeTableWikilinks(markdown), {
+  return fromMarkdown(preprocessObsidian(markdown), {
     extensions: [gfm(), math()],
     mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()],
   })

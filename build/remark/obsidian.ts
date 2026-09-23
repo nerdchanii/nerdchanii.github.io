@@ -22,7 +22,14 @@ import type {
 import { SKIP, visit } from "unist-util-visit"
 import type { VFile } from "vfile"
 import { tagUrl } from "../../src/lib/tags.ts"
-import { embedKind, linkTextNodes, matchTags, splitWikilink, WIKILINK } from "../markdown.ts"
+import {
+  embedKind,
+  linkTextNodes,
+  markdownMediaKind,
+  matchTags,
+  splitWikilink,
+  WIKILINK,
+} from "../markdown.ts"
 import { isNotRelative, type Resolver } from "../resolve.ts"
 
 /** `[!type]`, `[!multi-column]`, `[!note|meta]`, 접기 표시 `+`/`-` (Quartz와 같은 규칙) */
@@ -127,7 +134,7 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
 
     // `![clip](clip.mp4)`처럼 마크다운 이미지 문법으로 쓴 영상·소리는 재생할 수 있게 바꾼다 (Quartz enableVideoEmbed).
     visit(tree, "image", (node: Image) => {
-      const kind = embedKind(node.url.split(/[?#]/)[0])
+      const kind = markdownMediaKind(node.url)
       if (kind !== "video" && kind !== "audio") return
       node.data = { ...node.data, hName: kind, hProperties: { alt: undefined, controls: true } }
     })
