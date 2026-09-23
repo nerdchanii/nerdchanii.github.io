@@ -273,7 +273,9 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
     const git = withDates ? gitDates(file) : { created: null, updated: null }
     const rawAliases = [...toList(fm.aliases), ...toList(fm.alias)]
     const oldPath = rawAliases.find((a) => a.startsWith("/"))
-    const refs = scanBody(parseMarkdown(body))
+    // Obsidian 문법(주석, 위키링크 이스케이프)은 .md 노트에만 적용한다. .mdx는 JS/JSX가 섞여 있어 원문 그대로 둔다.
+    const obsidian = !file.endsWith(".mdx")
+    const refs = scanBody(parseMarkdown(body, { obsidian }))
     bodyRefs.set(id, refs)
     const ogImage = fm.image ?? fm.cover ?? fm.socialImage
     if (ogImage) images.set(id, ogImage)
@@ -293,7 +295,7 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
       date: toIsoOr(fm.date ?? fm.created ?? fm.published ?? fm.publishDate, git.created),
       updated: toIsoOr(fm.updated ?? fm.modified ?? fm.lastmod ?? fm["last-modified"], git.updated),
       // Quartz처럼 description이 없으면 본문 앞부분으로 만든다.
-      description: fm.description ?? excerpt(preprocessObsidian(body)),
+      description: fm.description ?? excerpt(obsidian ? preprocessObsidian(body) : body),
       draft: false,
       comments: fm.comments ?? true,
       aliases: rawAliases.map((a) => aliasUrl(a, url, isIndex)),

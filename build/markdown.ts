@@ -105,53 +105,41 @@ const WIKILINK_SPAN = /!?\[\[[^\]]*?\]\]/g
  * 코드 블록, 인라인 코드, 수식은 건드리지 않는다.
  */
 export function preprocessObsidian(markdown: string): string {
-  const escape = (text: string) =>
-    text.replace(WIKILINK_SPAN, (link) => link.replace(/((^|[^\\])(\\\\)*)\|/g, "$1\\|"))
-  const code = codeRanges(markdown, { inline: true })
-
-  // 코드 밖의 `%%`를 앞에서부터 둘씩 짝지어 주석 구간을 만든다. 주석이 코드 블록을 감싸면 그 코드도 함께 지운다.
-  // 짝이 없는 마지막 `%%`는 그대로 둔다 (Quartz의 /%%[\s\S]*?%%/와 같다).
-  const marks: number[] = []
-  let from = 0
-  for (const [start, end] of [...code, [markdown.length, markdown.length]]) {
-    for (
-      let i = markdown.indexOf("%%", from);
-      i !== -1 && i + 2 <= start;
-      i = markdown.indexOf("%%", i + 2)
-    )
-      marks.push(i)
-    from = Math.max(from, end)
+  let doc = markdown
+  let ranges = codeRanges(doc, { inline: true })
+  const outsideCode = (from: number) => {
+    for (let i = doc.indexOf("%%", from); i !== -1; i = doc.indexOf("%%", i + 2)) {
+      if (!ranges.some(([start, end]) => i >= start && i < end)) return i
+    }
+    return -1
   }
-  const comments: [number, number][] = []
-  for (let i = 0; i + 1 < marks.length; i += 2) comments.push([marks[i], marks[i + 1] + 2])
 
-  // 문서를 코드/글 조각으로 나눠, 주석 구간을 뺀 나머지만 남긴다. 글 조각에만 위키링크 이스케이프를 한다.
-  const pieces: { start: number; end: number; code: boolean }[] = []
+  // 주석을 하나씩 지우고 그때마다 다시 파싱한다. 여는 `%%`는 코드 밖에 있어야 하고,
+  // 닫는 `%%`는 코드 밖의 다음 `%%`다. 주석 안에서 연 코드 펜스가 닫히지 않아 뒤를 모두 코드로 만들면
+  // 코드 안이라도 다음 `%%`에서 닫는다 (주석이 코드 기호보다 먼저다). 짝이 없는 `%%`는 그대로 둔다.
+  for (let from = 0; ;) {
+    const open = outsideCode(from)
+    if (open === -1) break
+    let close = outsideCode(open + 2)
+    if (close === -1) close = doc.indexOf("%%", open + 2)
+    if (close === -1) break
+    doc = doc.slice(0, open) + doc.slice(close + 2)
+    ranges = codeRanges(doc, { inline: true })
+    from = open
+  }
+
+  // 남은 글에서 위키링크의 `|`를 이스케이프한다. 코드는 건드리지 않는다.
+  let out = ""
   let last = 0
-  for (const [start, end] of code) {
-    if (start > last) pieces.push({ start: last, end: start, code: false })
-    pieces.push({ start, end, code: true })
+  for (const [start, end] of ranges) {
+    out += escapeWikilinkPipes(doc.slice(last, start)) + doc.slice(start, end)
     last = end
   }
-  if (last < markdown.length) pieces.push({ start: last, end: markdown.length, code: false })
-
-  let out = ""
-  for (const piece of pieces) {
-    let cursor = piece.start
-    const keep = (end: number) => {
-      if (end <= cursor) return
-      const text = markdown.slice(cursor, end)
-      out += piece.code ? text : escape(text)
-    }
-    for (const [start, end] of comments) {
-      if (end <= cursor || start >= piece.end) continue
-      keep(Math.min(start, piece.end))
-      cursor = Math.max(cursor, Math.min(end, piece.end))
-    }
-    keep(piece.end)
-  }
-  return out
+  return out + escapeWikilinkPipes(doc.slice(last))
 }
+
+const escapeWikilinkPipes = (text: string) =>
+  text.replace(WIKILINK_SPAN, (link) => link.replace(/((^|[^\\])(\\\\)*)\|/g, "$1\\|"))
 
 /**
  * 코드 블록(펜스·들여쓰기, 인용·목록 안 포함)과 수식 블록의 원문 위치. 마크다운 파서로 찾으므로
@@ -176,8 +164,9 @@ export function codeRanges(markdown: string, { inline = false } = {}): [number, 
   return ranges.sort((a, b) => a[0] - b[0])
 }
 
-export function parseMarkdown(markdown: string): Root {
-  return fromMarkdown(preprocessObsidian(markdown), {
+/** `obsidian`이 false면 (.mdx) Obsidian 전처리를 하지 않는다 */
+export function parseMarkdown(markdown: string, { obsidian = true } = {}): Root {
+  return fromMarkdown(obsidian ? preprocessObsidian(markdown) : markdown, {
     extensions: [gfm(), math()],
     mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()],
   })
