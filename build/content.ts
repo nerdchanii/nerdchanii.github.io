@@ -193,11 +193,15 @@ export function contentPlugin({ onChange }: { onChange?: () => void } = {}): Plu
       })
 
       // 글이 추가·삭제·수정되면 목록(frontmatter, URL)을 다시 만든다.
+      // 다른 글의 위키링크·임베드도 옛 목록으로 변환돼 캐시돼 있으므로 글 모듈 전체를 무효화한다.
       const refresh = (file: string) => {
         if (!file.startsWith(CONTENT_DIR)) return
         onChange?.()
-        const mod = server.moduleGraph.getModuleById(RESOLVED_ID)
-        if (mod) server.moduleGraph.invalidateModule(mod)
+        for (const mod of server.moduleGraph.idToModuleMap.values()) {
+          if (mod.id === RESOLVED_ID || mod.file?.startsWith(CONTENT_DIR)) {
+            server.moduleGraph.invalidateModule(mod)
+          }
+        }
         server.ws.send({ type: "full-reload" })
       }
       server.watcher.on("add", refresh)
