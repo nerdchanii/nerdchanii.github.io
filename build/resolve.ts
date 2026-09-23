@@ -89,11 +89,12 @@ export function createResolver(
       const rel = path.posix.normalize(path.posix.join(fromDir.split(path.sep).join("/"), target))
       if (rel.startsWith("../")) return undefined
 
-      // 확장자 없이 쓴 링크(`[글](other)`)도 글로 본다.
-      const entry =
-        pageByPath.get(norm(rel)) ??
-        pageByPath.get(norm(`${rel}.md`)) ??
-        pageByPath.get(norm(`${rel}.mdx`))
+      // 확장자 없이 쓴 링크(`[글](other)`)도 글로 보고, 폴더 링크(`../reading/`, `../reading`)는 그 폴더의 index로 본다.
+      const base = rel.replace(/\/+$/, "")
+      const candidates = rel.endsWith("/")
+        ? [`${base}/index.md`, `${base}/index.mdx`]
+        : [base, `${base}.md`, `${base}.mdx`, `${base}/index.md`, `${base}/index.mdx`]
+      const entry = candidates.map((c) => pageByPath.get(norm(c))).find(Boolean)
       if (entry) return { kind: "page", entry, query: rawQuery, hash }
       // `images/a#1.png`처럼 파일명에 `#`이 그대로 들어간 경우도 받아 준다 (`%23`이 맞는 표기).
       // 미디어의 `?query`, `#t=30` 같은 꼬리는 쓴 그대로 붙여 준다.
