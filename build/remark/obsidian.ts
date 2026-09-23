@@ -21,7 +21,7 @@ import type {
 import { SKIP, visit } from "unist-util-visit"
 import type { VFile } from "vfile"
 import { tagUrl } from "../../src/lib/tags.ts"
-import { matchTags, splitWikilink, WIKILINK } from "../markdown.ts"
+import { isLinkText, matchTags, splitWikilink, WIKILINK } from "../markdown.ts"
 import { isNotRelative, type Resolver } from "../resolve.ts"
 
 const CALLOUT = /^\[!(\w+)\][+-]?[ \t]*([^\n]*)\n?/
@@ -36,8 +36,7 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
 
     visit(tree, "text", (node: Text, index, parent) => {
       // 링크 글자 안은 그대로 둔다 (scanBody와 같은 규칙).
-      if (!parent || index === undefined || parent.type === "link" || !node.value.includes("[["))
-        return
+      if (!parent || index === undefined || isLinkText(parent) || !node.value.includes("[[")) return
 
       const parts: PhrasingContent[] = []
       let last = 0
@@ -85,7 +84,7 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
 
     // 위키링크를 바꾼 뒤에 돈다. 링크 안의 글자는 건너뛴다.
     visit(tree, "text", (node: Text, index, parent) => {
-      if (!parent || index === undefined || parent.type === "link") return
+      if (!parent || index === undefined || isLinkText(parent)) return
       const found = matchTags(node.value)
       if (found.length === 0) return
 

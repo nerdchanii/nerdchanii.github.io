@@ -46,6 +46,10 @@ export function splitWikilink(bang: string, rawTarget: string, hash: string | un
   }
 }
 
+/** 링크 글자(`[글자](…)`, `[글자][ref]`)인지. 그 안의 위키링크·태그는 링크로 바꾸지 않는다 (a 안에 a가 생긴다). */
+export const isLinkText = (parent: { type: string } | undefined) =>
+  parent?.type === "link" || parent?.type === "linkReference"
+
 export function parseMarkdown(markdown: string): Root {
   return fromMarkdown(markdown, {
     extensions: [gfm(), math()],
@@ -61,14 +65,23 @@ export type BodyRef =
   | { kind: "tag"; tag: string }
 
 export function scanBody(tree: Root): BodyRef[] {
+  // 참조식 링크(`[글][ref]`)는 실제로 쓰인 정의만 센다. 쓰이지 않은 `[ref]: …`는 화면에 링크가 없다.
+  const definitions = new Map<string, string>()
+  visit(tree, "definition", (node) => {
+    if (!definitions.has(node.identifier)) definitions.set(node.identifier, node.url)
+  })
+
   const refs: BodyRef[] = []
   visit(tree, (node, _index, parent) => {
-    if (node.type === "link" || node.type === "definition")
-      refs.push({ kind: "link", url: node.url })
+    if (node.type === "link") refs.push({ kind: "link", url: node.url })
     else if (node.type === "image") refs.push({ kind: "image", url: node.url })
-    else if (node.type === "text") {
+    else if (node.type === "linkReference" || node.type === "imageReference") {
+      const url = definitions.get(node.identifier)
+      if (url !== undefined)
+        refs.push({ kind: node.type === "linkReference" ? "link" : "image", url })
+    } else if (node.type === "text") {
       // 링크 글자 안은 렌더할 때도 위키링크·태그로 바꾸지 않는다.
-      if (parent?.type === "link") return
+      if (isLinkText(parent)) return
       for (const [, bang, rawTarget, hash] of node.value.matchAll(WIKILINK)) {
         refs.push({ kind: "wikilink", ...splitWikilink(bang, rawTarget, hash) })
       }
