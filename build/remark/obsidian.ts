@@ -125,6 +125,13 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
           : found.entry.url + found.query + (found.hash ? `#${headingId(found.hash)}` : "")
     })
 
+    // `![clip](clip.mp4)`처럼 마크다운 이미지 문법으로 쓴 영상·소리는 재생할 수 있게 바꾼다 (Quartz enableVideoEmbed).
+    visit(tree, "image", (node: Image) => {
+      const kind = embedKind(node.url.split(/[?#]/)[0])
+      if (kind !== "video" && kind !== "audio") return
+      node.data = { ...node.data, hName: kind, hProperties: { alt: undefined, controls: true } }
+    })
+
     visit(tree, "blockquote", (node: Blockquote) => {
       const first = node.children[0]
       if (first?.type !== "paragraph") return

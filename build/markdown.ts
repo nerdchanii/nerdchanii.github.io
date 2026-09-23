@@ -85,8 +85,31 @@ export function linkTextNodes(tree: Root): Set<Text> {
   return found
 }
 
+/** GFM 표. Quartz의 tableRegex와 같다 */
+const TABLE = /^\|([^\n])+\|\n(\|)( ?:?-{3,}:? ?\|)+\n(\|([^\n])+\|\n?)+/gm
+const TABLE_WIKILINK = /!?\[\[[^\]]*?\]\]/g
+const FENCE = /^(```|~~~)[\s\S]*?^\1[^\n]*$/gm
+
+/**
+ * 표 안의 위키링크 `[[글|표시]]`의 `|`를 `\|`로 바꾼다. 그대로 두면 GFM이 열 구분자로 읽어 표와 링크가 깨진다.
+ * 파싱 뒤 text 노드에는 `|`로 돌아온다. Quartz도 remark 전에 같은 처리를 했다. 코드 블록은 건드리지 않는다.
+ */
+export function escapeTableWikilinks(markdown: string): string {
+  const escapeTables = (text: string) =>
+    text.replace(TABLE, (table) =>
+      table.replace(TABLE_WIKILINK, (link) => link.replace(/((^|[^\\])(\\\\)*)\|/g, "$1\\|")),
+    )
+  let out = ""
+  let last = 0
+  for (const fence of markdown.matchAll(FENCE)) {
+    out += escapeTables(markdown.slice(last, fence.index)) + fence[0]
+    last = fence.index + fence[0].length
+  }
+  return out + escapeTables(markdown.slice(last))
+}
+
 export function parseMarkdown(markdown: string): Root {
-  return fromMarkdown(markdown, {
+  return fromMarkdown(escapeTableWikilinks(markdown), {
     extensions: [gfm(), math()],
     mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()],
   })

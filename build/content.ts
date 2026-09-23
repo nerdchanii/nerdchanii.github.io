@@ -14,7 +14,7 @@ import {
 import { tagSlug } from "../src/lib/tags.ts"
 import { excerpt } from "./excerpt.ts"
 import { parseFrontmatter, type Frontmatter } from "./frontmatter.ts"
-import { IMAGE_EXT, parseMarkdown, scanBody, type BodyRef } from "./markdown.ts"
+import { embedKind, IMAGE_EXT, parseMarkdown, scanBody, type BodyRef } from "./markdown.ts"
 import { createResolver, type Resolver } from "./resolve.ts"
 import { normalizePath, slugifySegment } from "./slug.ts"
 
@@ -147,7 +147,8 @@ function previewImage(
 
   for (const ref of refs) {
     const found =
-      ref.kind === "image"
+      // `![](clip.mp4)`처럼 영상·소리·PDF를 가리키는 이미지 문법은 미리보기 이미지로 쓰지 않는다.
+      ref.kind === "image" && (embedKind(ref.url.split(/[?#]/)[0]) ?? "image") === "image"
         ? fromUrl(ref.url)
         : ref.kind === "wikilink" && ref.embedsFile && IMAGE_EXT.test(ref.target)
           ? resolver.media(ref.target, entry.file)
