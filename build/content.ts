@@ -79,12 +79,15 @@ export function loadContent(): ContentEntry[] {
       isIndex ? dirUrl(dir) : `${dirUrl(dir)}/${slugifySegment(fm.slug ?? name)}`,
     )
 
-    if (RESERVED_ROUTES.includes(url) || RESERVED_OUTPUT_NAMES.includes(url.split("/")[1])) {
+    // 라우터는 고정 경로를 대소문자 구분 없이 매칭하고, macOS 같은 파일 시스템도
+    // 대소문자를 구분하지 않으므로 검증은 소문자로 한다.
+    const key = url.toLowerCase()
+    if (RESERVED_ROUTES.includes(key) || RESERVED_OUTPUT_NAMES.includes(key.split("/")[1])) {
       throw new Error(`예약된 경로와 겹치는 글: ${url} ← ${id}`)
     }
-    const existing = byUrl.get(url)
+    const existing = byUrl.get(key)
     if (existing) throw new Error(`URL 충돌: ${url} ← ${existing}, ${id}`)
-    byUrl.set(url, id)
+    byUrl.set(key, id)
 
     entries.push({
       id,
