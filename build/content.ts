@@ -49,8 +49,9 @@ export function loadContent(): ContentEntry[] {
   const dirSlugs = new Map<string, string>()
   for (const id of files) {
     if (path.basename(id, path.extname(id)) !== "index") continue
-    const slug = readFrontmatter(path.join(CONTENT_DIR, id)).slug
-    if (slug) dirSlugs.set(path.dirname(id), slugifySegment(slug))
+    const fm = readFrontmatter(path.join(CONTENT_DIR, id))
+    // 초안 index의 slug는 빌드에 반영하지 않는다.
+    if (fm.slug && !fm.draft) dirSlugs.set(path.dirname(id), slugifySegment(fm.slug))
   }
 
   const dirUrl = (dir: string): string => {
