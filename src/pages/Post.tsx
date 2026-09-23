@@ -1,17 +1,28 @@
 import { Meta, Title } from "@solidjs/meta"
-import { Show } from "solid-js"
+import { A } from "@solidjs/router"
+import { For, Show } from "solid-js"
 import { Dynamic } from "solid-js/web"
+import Comments from "../components/Comments.tsx"
 import PostList from "../components/PostList.tsx"
-import { posts, type Entry } from "../lib/content.ts"
-import { SITE_NAME, formatDate } from "../lib/site.ts"
+import TagList from "../components/TagList.tsx"
+import { backlinks, entries, posts, type Entry } from "../lib/content.ts"
+import { SITE_NAME, dayOf, formatDate } from "../lib/site.ts"
 
 export default function Post(props: { entry: Entry }) {
   const entry = () => props.entry
-  // 폴더 index 페이지면 그 폴더 아래 글 목록을 같이 보여준다.
-  const children = () => posts.filter((p) => p.url.startsWith(`${entry().url}/`))
+  const isUnder = (url: string) => url.startsWith(`${entry().url}/`)
+
+  // 폴더 index 페이지면 하위 폴더와 그 아래 글 목록을 같이 보여준다.
+  const subfolders = () =>
+    entries.filter(
+      (e) => e.isIndex && isUnder(e.url) && !e.url.slice(entry().url.length + 1).includes("/"),
+    )
+  const children = () => posts.filter((p) => isUnder(p.url))
+  const linkedFrom = () => backlinks(entry().url)
+  const wasUpdated = () => entry().updated && dayOf(entry().updated) !== dayOf(entry().date)
 
   return (
-    <article>
+    <article class="post">
       <Title>
         {entry().title} · {SITE_NAME}
       </Title>
@@ -21,9 +32,18 @@ export default function Post(props: { entry: Entry }) {
 
       <header class="post-header">
         <h1>{entry().title}</h1>
-        <Show when={entry().date}>
-          <time datetime={entry().date!}>{formatDate(entry().date)}</time>
-        </Show>
+        <p class="post-meta">
+          <Show when={entry().date}>
+            <time datetime={entry().date!}>{formatDate(entry().date)}</time>
+          </Show>
+          <Show when={wasUpdated()}>
+            <span>
+              {" "}
+              · 수정 <time datetime={entry().updated!}>{formatDate(entry().updated)}</time>
+            </span>
+          </Show>
+        </p>
+        <TagList tags={entry().tags} />
       </header>
 
       <div class="prose">
@@ -31,7 +51,29 @@ export default function Post(props: { entry: Entry }) {
       </div>
 
       <Show when={entry().isIndex}>
+        <Show when={subfolders().length > 0}>
+          <ul class="folder-list">
+            <For each={subfolders()}>
+              {(folder) => (
+                <li>
+                  <A href={folder.url}>{folder.title}</A>
+                </li>
+              )}
+            </For>
+          </ul>
+        </Show>
         <PostList entries={children()} />
+      </Show>
+
+      <Show when={linkedFrom().length > 0}>
+        <section class="backlinks">
+          <h2>이 글을 링크한 글</h2>
+          <PostList entries={linkedFrom()} />
+        </section>
+      </Show>
+
+      <Show when={entry().comments}>
+        <Comments path={entry().commentPath} />
       </Show>
     </article>
   )

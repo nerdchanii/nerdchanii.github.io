@@ -11,6 +11,7 @@ import { defineConfig } from "vite"
 import solid from "vite-plugin-solid"
 import { contentPlugin } from "./build/content.ts"
 import { rehypeStaticHtml } from "./build/rehype/static-html.ts"
+import { rehypeToc } from "./build/rehype/toc.ts"
 import { remarkObsidian } from "./build/remark/obsidian.ts"
 import { createResolver, type Resolver } from "./build/resolve.ts"
 
@@ -39,6 +40,7 @@ export default defineConfig({
         ],
         rehypePlugins: [
           rehypeSlug,
+          rehypeToc,
           rehypeKatex,
           [
             rehypeShiki,

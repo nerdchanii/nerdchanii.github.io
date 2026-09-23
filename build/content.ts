@@ -8,6 +8,7 @@ import type { Plugin } from "vite"
 import { MEDIA_PREFIX, RESERVED_OUTPUT_NAMES, RESERVED_ROUTES } from "../src/lib/routes.ts"
 import { excerpt } from "./excerpt.ts"
 import { parseFrontmatter, type Frontmatter } from "./frontmatter.ts"
+import { createResolver, type Resolver } from "./resolve.ts"
 import { normalizePath, slugifySegment } from "./slug.ts"
 
 export const CONTENT_DIR = fileURLToPath(new URL("../content", import.meta.url))
@@ -33,6 +34,13 @@ export type ContentEntry = {
   comments: boolean
   /** 예전 URL. 이 경로들에는 `url`로 보내는 리다이렉트 페이지를 만든다 */
   aliases: string[]
+  /** 이 글이 링크하는 다른 글의 URL (백링크 계산용) */
+  links: string[]
+  /**
+   * 댓글(giscus)을 이어 붙일 경로. Quartz 시절 댓글은 그때 URL로 매핑돼 있으므로
+   * 절대 경로로 적은 alias(= 옮기기 전 URL)가 있으면 그것을, 없으면 지금 URL을 쓴다.
+   */
+  commentPath: string
 }
 
 function readFrontmatter(file: string): Frontmatter {
@@ -96,6 +104,37 @@ function aliasUrl(alias: string, entryUrl: string): string {
   return normalizePath(segments.join("/"))
 }
 
+const WIKILINK = /(?<!!)\[\[([^\]|#]*)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/g
+const MD_LINK = /\]\((\/[^)\s]*)\)/g
+
+/** 본문에서 다른 글로 가는 링크(위키링크, `/`로 시작하는 마크다운 링크)의 URL을 모은다 */
+function outgoingLinks(
+  body: string,
+  entry: ContentEntry,
+  resolver: Resolver,
+  urls: Set<string>,
+): string[] {
+  const text = body.replace(/^(```|~~~)[\s\S]*?^\1/gm, "")
+  const found = new Set<string>()
+  for (const [, target] of text.matchAll(WIKILINK)) {
+    if (!target.trim()) continue
+    const url = resolver.page(target, entry.file)?.url
+    if (url) found.add(url)
+  }
+  for (const [, href] of text.matchAll(MD_LINK)) {
+    let url = href.split(/[?#]/)[0]
+    try {
+      url = decodeURIComponent(url)
+    } catch {
+      continue
+    }
+    url = normalizePath(url.normalize("NFC"))
+    if (urls.has(url)) found.add(url)
+  }
+  found.delete(entry.url)
+  return [...found]
+}
+
 /**
  * content/ 아래의 모든 글을 스캔해서 URL이 확정된 목록을 만든다.
  * `withDates`가 false면 git을 호출하지 않는다 (링크 해석처럼 날짜가 필요 없을 때).
@@ -119,6 +158,7 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
   }
 
   const entries: ContentEntry[] = []
+  const bodies = new Map<string, string>()
   const byUrl = new Map<string, string>()
 
   // 라우터는 고정 경로를 대소문자 구분 없이 매칭하고, macOS 같은 파일 시스템도
@@ -152,6 +192,9 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
     claim(url, id)
 
     const git = withDates ? gitDates(file) : { created: null, updated: null }
+    const rawAliases = [...toList(fm.aliases), ...toList(fm.alias)]
+    const oldPath = rawAliases.find((a) => a.startsWith("/"))
+    bodies.set(id, body)
     entries.push({
       id,
       file,
@@ -166,7 +209,9 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
       description: fm.description ?? excerpt(body),
       draft: false,
       comments: fm.comments ?? true,
-      aliases: [...toList(fm.aliases), ...toList(fm.alias)].map((a) => aliasUrl(a, url)),
+      aliases: rawAliases.map((a) => aliasUrl(a, url)),
+      links: [],
+      commentPath: oldPath ? aliasUrl(oldPath, url) : url,
     })
   }
 
@@ -174,6 +219,12 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
   for (const entry of entries) {
     entry.aliases = [...new Set(entry.aliases)].filter((a) => a !== entry.url)
     for (const alias of entry.aliases) claim(alias, `${entry.id} (alias)`)
+  }
+
+  const resolver = createResolver(entries)
+  const urls = new Set(entries.map((e) => e.url))
+  for (const entry of entries) {
+    entry.links = outgoingLinks(bodies.get(entry.id) ?? "", entry, resolver, urls)
   }
 
   return entries

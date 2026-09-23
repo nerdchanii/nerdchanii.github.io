@@ -26,8 +26,10 @@ function pickClosest(candidates: string[], fromDir: string): string | undefined 
   return [...candidates].sort((a, b) => rank(a) - rank(b) || a.length - b.length)[0]
 }
 
-export function createResolver(): Resolver {
-  const entries = loadContent({ withDates: false })
+/** `entries`를 넘기면 그 목록으로, 아니면 content/를 새로 스캔해서 조회기를 만든다 */
+export function createResolver(
+  entries: ContentEntry[] = loadContent({ withDates: false }),
+): Resolver {
   const media = listMediaFiles()
   const byId = new Map(entries.map((e) => [e.id, e]))
 

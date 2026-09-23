@@ -177,7 +177,7 @@ type PostMeta = {
 
 ### 외부 서비스
 
-- **giscus**: 지금 설정(GitHub Discussions)을 그대로 쓴다. 클라이언트에서만 로드한다.
+- **giscus**: `specific` 매핑으로 글마다 `commentPath`를 넘긴다. 옮긴 글은 첫 번째 절대 경로 alias(= Quartz 시절 URL)를 쓰고, 형식은 giscus `pathname` 매핑과 같게 퍼센트 인코딩 + 앞 `/` 제외로 맞췄다. 배포 후 기존 댓글이 붙는지 한 번 확인할 것.
 - 분석 도구는 현재 Quartz 설정을 확인한 뒤 유지 여부를 정한다.
 
 ---
@@ -199,7 +199,7 @@ npm run build
 
 - [x] **Phase 1. 뼈대**: Quartz 제거, Vite + Solid + MDX 설정, SSR entry, 모든 글을 prerender해서 정적 HTML로 출력, hydration 확인
 - [x] **Phase 2. 콘텐츠 파이프라인**: 콘텐츠 인덱스, slug 규칙, 위키링크·callout·이미지·KaTeX·코드 하이라이팅(shiki), git 기반 날짜, 자동 description, frontmatter 스키마 검증(zod), 폴더 매핑과 예전 URL `aliases` 리다이렉트
-- [ ] **Phase 3. 페이지**: 레이아웃, 다크모드, 글 목록·글·섹션·태그·404, 목차, 백링크, giscus
+- [x] **Phase 3. 페이지**: 헤더·푸터 레이아웃, 다크모드 토글(깜빡임 없음), 연도별 글 목록, 태그 목록·태그별 페이지, 목차, 백링크, 폴더 index의 하위 폴더·글 목록, giscus 댓글
 - [ ] **Phase 4. 출력과 배포**: OG 메타, RSS, sitemap, 리다이렉트, GitHub Actions 배포
 - [ ] **Phase 5. 랜딩**: 레이어 UI (Three.js) + 목록 대체 화면, 프로젝트 데이터 연결
 - [ ] **Phase 6. 추가 기능**: 클라이언트 검색 등

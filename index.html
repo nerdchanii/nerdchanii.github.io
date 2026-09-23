@@ -3,6 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // 첫 페인트 전에 테마를 정해 깜빡임을 막는다. 저장된 값이 없으면 시스템 설정을 따른다.
+      ;(function () {
+        var theme
+        try {
+          theme = localStorage.getItem("theme")
+        } catch (e) {}
+        if (theme !== "light" && theme !== "dark") {
+          theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+        }
+        document.documentElement.dataset.theme = theme
+      })()
+    </script>
     <!--app-head-->
   </head>
   <body>
