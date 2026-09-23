@@ -17,7 +17,11 @@ export function findEntry(pathname: string): Entry | undefined {
   } catch {
     // 잘못된 인코딩이면 원문 그대로 찾는다.
   }
-  const normalized = decoded.normalize("NFC").replace(/\/+$/, "") || "/"
+  const normalized =
+    decoded
+      .normalize("NFC")
+      .replace(/\/index\.html$/, "")
+      .replace(/\/+$/, "") || "/"
   return byUrl.get(normalized)
 }
 

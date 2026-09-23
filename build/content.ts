@@ -147,7 +147,9 @@ export function listMediaFiles(): string[] {
 
 /** 미디어 파일의 공개 URL (`/_media/devlog/images/x.png`) */
 export function mediaUrl(relPath: string): string {
-  return encodeURI(`/${MEDIA_PREFIX}/${relPath.normalize("NFC")}`)
+  // 파일명에 `?`, `#` 같은 URL 구분자가 있어도 경로로 읽히도록 조각마다 인코딩한다.
+  const segments = relPath.normalize("NFC").split("/").map(encodeURIComponent)
+  return `/${MEDIA_PREFIX}/${segments.join("/")}`
 }
 
 const VIRTUAL_ID = "virtual:content"
