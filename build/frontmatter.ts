@@ -26,8 +26,9 @@ export const frontmatterSchema = z
     date: optional(date),
     updated: optional(date),
     description: optional(z.string()),
-    /** 링크 미리보기 이미지. `socialImage`는 Quartz 시절 이름 */
+    /** 링크 미리보기 이미지. `cover`도 같은 뜻이고, `socialImage`는 Quartz 시절 이름 */
     image: optional(text),
+    cover: optional(text),
     socialImage: optional(text),
     draft: optional(z.boolean()),
     comments: optional(z.boolean()),

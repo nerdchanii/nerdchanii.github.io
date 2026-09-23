@@ -137,7 +137,13 @@ function previewImage(
     } catch {}
     return resolver.media(name, entry.file) ?? null
   }
-  if (explicit) return fromUrl(explicit)
+  if (explicit) {
+    const found = fromUrl(explicit)
+    if (found) return found
+    console.warn(
+      `[content] ${entry.id}: 미리보기 이미지를 찾을 수 없음: ${explicit} (본문 이미지로 대신한다)`,
+    )
+  }
 
   for (const ref of refs) {
     const found =
@@ -248,7 +254,7 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
     const oldPath = rawAliases.find((a) => a.startsWith("/"))
     const refs = scanBody(parseMarkdown(body))
     bodyRefs.set(id, refs)
-    const ogImage = fm.image ?? fm.socialImage
+    const ogImage = fm.image ?? fm.cover ?? fm.socialImage
     if (ogImage) images.set(id, ogImage)
     entries.push({
       id,

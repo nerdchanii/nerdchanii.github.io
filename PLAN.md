@@ -81,7 +81,7 @@ description: ... # 선택. 없으면 본문 앞부분에서 추출
 draft: false # true면 빌드에서 제외 (저장소에는 남는다는 점 주의)
 comments: true # giscus 표시 여부
 aliases: [] # 예전 URL. 리다이렉트 페이지를 만든다
-cover: ./images/x.png # 선택. OG 이미지
+cover: ./images/x.png # 선택. OG 이미지 (`image`, Quartz의 `socialImage`도 받는다)
 ```
 
 ### slug 규칙 (한글·영문 모두 지원)
