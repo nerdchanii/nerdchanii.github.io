@@ -276,6 +276,10 @@ a:hover {
 /* 본문 */
 .prose img {
   max-width: 100%;
+}
+
+/* 높이를 지정하지 않은 이미지만 비율을 유지한다. `![[a.png|300x200]]`처럼 높이를 준 이미지는 그 값을 따른다. */
+.prose img:not([height]) {
   height: auto;
 }
 

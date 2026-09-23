@@ -98,7 +98,6 @@ export function linkTextNodes(tree: Root): Set<Text> {
 /** GFM 표. Quartz의 tableRegex와 같다 */
 const TABLE = /^\|([^\n])+\|\n(\|)( ?:?-{3,}:? ?\|)+\n(\|([^\n])+\|\n?)+/gm
 const TABLE_WIKILINK = /!?\[\[[^\]]*?\]\]/g
-const FENCE = /^(```|~~~)[\s\S]*?^\1[^\n]*$/gm
 
 /** Obsidian 주석 `%% … %%` (여러 줄 가능). Quartz의 commentRegex와 같다 */
 const COMMENT = /%%[\s\S]*?%%/g
@@ -118,11 +117,33 @@ export function preprocessObsidian(markdown: string): string {
       )
   let out = ""
   let last = 0
-  for (const fence of markdown.matchAll(FENCE)) {
-    out += transform(markdown.slice(last, fence.index)) + fence[0]
-    last = fence.index + fence[0].length
+  for (const [start, end] of codeBlockRanges(markdown)) {
+    out += transform(markdown.slice(last, start)) + markdown.slice(start, end)
+    last = end
   }
   return out + transform(markdown.slice(last))
+}
+
+/**
+ * 코드 블록(펜스·들여쓰기, 인용·목록 안 포함)과 수식 블록의 원문 위치. 마크다운 파서로 찾으므로
+ * ```` ```` ```` 네 개짜리 펜스 안의 ``` 같은 경우도 CommonMark 규칙대로 처리된다.
+ * 표 인식이 깨지지 않도록 인라인 코드는 보호하지 않는다 (Quartz도 전체 원문에 적용했다).
+ */
+function codeBlockRanges(markdown: string): [number, number][] {
+  const tree = fromMarkdown(markdown, {
+    extensions: [gfm(), math()],
+    mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()],
+  })
+  const ranges: [number, number][] = []
+  visit(tree, (node) => {
+    if ((node.type === "code" || node.type === "math") && node.position) {
+      const { start, end } = node.position
+      if (start.offset !== undefined && end.offset !== undefined)
+        ranges.push([start.offset, end.offset])
+      return SKIP
+    }
+  })
+  return ranges.sort((a, b) => a[0] - b[0])
 }
 
 export function parseMarkdown(markdown: string): Root {
