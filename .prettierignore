@@ -1,3 +1,5 @@
-public
+dist
+.ssr
 node_modules
-.quartz-cache
+package-lock.json
+content

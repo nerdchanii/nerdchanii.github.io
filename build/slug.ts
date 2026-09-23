@@ -1,0 +1,18 @@
+/**
+ * URL 한 조각(폴더명·파일명·frontmatter slug)을 정규화한다.
+ * 한글은 그대로 두고, 공백은 `-`로 바꾸며, URL에 문제가 되는 문자는 제거한다.
+ * macOS에서 만든 파일명은 NFD(자모 분리)일 수 있으므로 NFC로 맞춘다.
+ */
+export function slugifySegment(segment: string): string {
+  return segment
+    .normalize("NFC")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[?#%\\"'<>`^{}|]/g, "")
+}
+
+/** `/a/b/` 형태의 경로를 `/a/b`로 맞춘다. 루트는 `/`. */
+export function normalizePath(path: string): string {
+  const trimmed = path.replace(/\/+$/, "")
+  return trimmed === "" ? "/" : trimmed.startsWith("/") ? trimmed : `/${trimmed}`
+}
