@@ -9,6 +9,8 @@ export type FeedItem = {
   url: string
   title: string
   date: string | null
+  /** 마지막 수정일. 없으면 date */
+  updated: string | null
   description: string | null
   tags: string[]
 }
@@ -19,7 +21,13 @@ const escapeXml = (s: string) =>
 const absolute = (url: string) => SITE_URL + encodeURI(url)
 
 export function renderFeed(items: FeedItem[], description: string): string {
-  const latest = items.find((item) => item.date)?.date
+  // Quartz(defaultDateType: "modified")처럼 수정일을 피드 날짜로 써서, 글을 고치면 구독자에게도 반영되게 한다.
+  const revised = (item: FeedItem) => item.updated ?? item.date
+  const latest = items
+    .map(revised)
+    .filter((d): d is string => d !== null)
+    .sort()
+    .at(-1)
   const entries = items
     .map((item) => {
       const link = escapeXml(absolute(item.url))
@@ -28,7 +36,7 @@ export function renderFeed(items: FeedItem[], description: string): string {
         `      <title>${escapeXml(item.title)}</title>`,
         `      <link>${link}</link>`,
         `      <guid isPermaLink="true">${link}</guid>`,
-        item.date ? `      <pubDate>${new Date(item.date).toUTCString()}</pubDate>` : "",
+        revised(item) ? `      <pubDate>${new Date(revised(item)!).toUTCString()}</pubDate>` : "",
         item.description ? `      <description>${escapeXml(item.description)}</description>` : "",
         ...item.tags.map((tag) => `      <category>${escapeXml(tag)}</category>`),
         "    </item>",

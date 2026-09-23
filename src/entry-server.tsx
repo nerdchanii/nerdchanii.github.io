@@ -6,10 +6,11 @@ import { STATIC_ROUTES } from "./lib/routes.ts"
 
 /** RSS 피드에 넣을 글 (최신순) */
 export function feedItems() {
-  return posts.map(({ url, title, date, description, tags }) => ({
+  return posts.map(({ url, title, date, updated, description, tags }) => ({
     url,
     title,
     date,
+    updated,
     description,
     tags,
   }))
