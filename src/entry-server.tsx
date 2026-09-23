@@ -1,8 +1,19 @@
 import { generateHydrationScript, getAssets, renderToString } from "solid-js/web"
 import App from "./app/App.tsx"
-import { entryUrls, findEntry, tags } from "./lib/content.ts"
+import { entryUrls, findEntry, posts, tags } from "./lib/content.ts"
 export { redirects } from "./lib/content.ts"
 import { STATIC_ROUTES } from "./lib/routes.ts"
+
+/** RSS 피드에 넣을 글 (최신순) */
+export function feedItems() {
+  return posts.map(({ url, title, date, description, tags }) => ({
+    url,
+    title,
+    date,
+    description,
+    tags,
+  }))
+}
 
 /** prerender 대상 경로. 고정 페이지 + 콘텐츠 전체 */
 export function routes(): string[] {

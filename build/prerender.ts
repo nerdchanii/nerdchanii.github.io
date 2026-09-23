@@ -6,6 +6,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { NOT_FOUND_ROUTE } from "../src/lib/routes.ts"
+import { FEED_PATH, renderFeed, type FeedItem } from "./feed.ts"
 
 const root = fileURLToPath(new URL("..", import.meta.url))
 const dist = path.join(root, "dist")
@@ -14,10 +15,13 @@ const ssrEntry = path.join(root, ".ssr/entry-server.js")
 type ServerEntry = {
   routes: () => string[]
   redirects: () => [from: string, to: string][]
+  feedItems: () => FeedItem[]
   render: (url: string) => Promise<{ html: string; head: string }>
 }
 
-const { routes, redirects, render } = (await import(pathToFileURL(ssrEntry).href)) as ServerEntry
+const { routes, redirects, feedItems, render } = (await import(
+  pathToFileURL(ssrEntry).href
+)) as ServerEntry
 const template = fs.readFileSync(path.join(dist, "index.html"), "utf8")
 
 function fill(page: { html: string; head: string }): string {
@@ -65,6 +69,8 @@ const aliases = redirects()
 for (const [from, to] of aliases) {
   write(path.join(dist, from, "index.html"), redirectPage(to))
 }
+
+write(path.join(dist, FEED_PATH), renderFeed(feedItems(), "AI와 머신러닝을 공부하며 남기는 기록"))
 
 // GitHub Pages는 없는 경로에 404.html을 보여준다.
 write(path.join(dist, "404.html"), fill(await render(NOT_FOUND_ROUTE)))

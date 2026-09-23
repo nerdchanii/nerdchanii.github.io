@@ -96,9 +96,11 @@ const toList = (value: string | string[] | undefined): string[] =>
  * `./`, `../`로 시작하면 글이 있는 폴더 기준, 그 밖에는 사이트 루트 기준이다.
  * 각 조각은 글 URL과 같은 slug 규칙을 거친다 (`MCQA Project 회고` → `/MCQA-Project-회고`).
  */
-function aliasUrl(alias: string, entryUrl: string): string {
+function aliasUrl(alias: string, entryUrl: string, isIndex: boolean): string {
   const raw = alias.trim().replace(/\.mdx?$/i, "")
-  const base = /^\.{1,2}\//.test(raw) ? path.posix.dirname(entryUrl) : "/"
+  // 폴더 index 파일은 그 폴더 안에 있으므로 자기 URL이 기준 폴더다.
+  const folder = isIndex ? entryUrl : path.posix.dirname(entryUrl)
+  const base = /^\.{1,2}\//.test(raw) ? folder : "/"
   const joined = path.posix.normalize(path.posix.join(base, raw))
   const segments = joined.split("/").filter(Boolean).map(slugifySegment)
   return normalizePath(segments.join("/"))
@@ -209,9 +211,9 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
       description: fm.description ?? excerpt(body),
       draft: false,
       comments: fm.comments ?? true,
-      aliases: rawAliases.map((a) => aliasUrl(a, url)),
+      aliases: rawAliases.map((a) => aliasUrl(a, url, isIndex)),
       links: [],
-      commentPath: oldPath ? aliasUrl(oldPath, url) : url,
+      commentPath: oldPath ? aliasUrl(oldPath, url, isIndex) : url,
     })
   }
 
