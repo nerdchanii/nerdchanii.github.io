@@ -45,7 +45,7 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
       let last = 0
       for (const match of node.value.matchAll(WIKILINK)) {
         const [raw, bang, rawTarget, hash, rawLabel] = match
-        const { embedsFile, target, heading } = splitWikilink(bang, rawTarget, hash)
+        const { embedsFile, target, heading, fragment } = splitWikilink(bang, rawTarget, hash)
         const label = rawLabel?.trim()
         if (match.index > last)
           parts.push({ type: "text", value: node.value.slice(last, match.index) })
@@ -54,7 +54,8 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
         // ![[image.png]], ![[clip.mp4]] … → 미디어
         if (embedsFile) {
           const url = resolver().media(target, from)
-          if (url) parts.push(embed(url, target, label))
+          if (url)
+            parts.push(embed(url + (fragment ? encodeURI(fragment.trim()) : ""), target, label))
           else {
             warn(`임베드할 파일을 찾을 수 없음: ${target}`)
             parts.push({ type: "text", value: raw })

@@ -28,7 +28,9 @@ export function renderFeed(items: FeedItem[], description: string): string {
     .filter((d): d is string => d !== null)
     .sort()
     .at(-1)
-  const entries = items
+  // 고친 글도 최신 글과 함께 위로 올라오도록 수정일 순으로 둔다 (날짜 없는 글은 맨 뒤).
+  const entries = [...items]
+    .sort((a, b) => (revised(b) ?? "").localeCompare(revised(a) ?? "", "en"))
     .map((item) => {
       const link = escapeXml(absolute(item.url))
       return [

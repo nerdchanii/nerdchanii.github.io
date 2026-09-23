@@ -54,11 +54,18 @@ export function matchTags(value: string): TagMatch[] {
  * 파일명이 되면 제목 조각이 아니라 파일명으로 본다.
  */
 export function splitWikilink(bang: string, rawTarget: string, hash: string | undefined) {
-  const embedsFile = Boolean(bang) && embedKind(rawTarget + (hash ?? "")) !== undefined
+  const whole = rawTarget + (hash ?? "")
+  // 1) `#`까지 합친 이름이 파일이면 그 이름 그대로
+  if (bang && embedKind(whole))
+    return { embedsFile: true, target: whole.trim(), heading: undefined, fragment: undefined }
+  // 2) `![[paper.pdf#page=3]]`처럼 파일 뒤의 `#…`는 미디어 URL 조각으로 붙인다
+  if (bang && embedKind(rawTarget.trim()))
+    return { embedsFile: true, target: rawTarget.trim(), heading: undefined, fragment: hash }
   return {
-    embedsFile,
-    target: (embedsFile ? rawTarget + (hash ?? "") : rawTarget).trim(),
-    heading: embedsFile ? undefined : hash?.slice(1).trim(),
+    embedsFile: false,
+    target: rawTarget.trim(),
+    heading: hash?.slice(1).trim(),
+    fragment: undefined,
   }
 }
 
@@ -87,7 +94,13 @@ export function parseMarkdown(markdown: string): Root {
 
 /** 본문에 보이는 순서대로 나오는 참조. 코드·수식은 text 노드가 아니므로 저절로 빠진다. */
 export type BodyRef =
-  | { kind: "wikilink"; target: string; heading: string | undefined; embedsFile: boolean }
+  | {
+      kind: "wikilink"
+      target: string
+      heading: string | undefined
+      embedsFile: boolean
+      fragment: string | undefined
+    }
   | { kind: "link"; url: string }
   | { kind: "image"; url: string }
   | { kind: "tag"; tag: string }
