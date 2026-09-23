@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url"
 import mdx from "@mdx-js/rollup"
+import rehypeShiki from "@shikijs/rehype"
 import rehypeKatex from "rehype-katex"
 import rehypeSlug from "rehype-slug"
 import remarkFrontmatter from "remark-frontmatter"
@@ -9,7 +10,7 @@ import remarkMdxFrontmatter from "remark-mdx-frontmatter"
 import { defineConfig } from "vite"
 import solid from "vite-plugin-solid"
 import { contentPlugin } from "./build/content.ts"
-import { rehypeKatexRaw } from "./build/rehype/katex-raw.ts"
+import { rehypeStaticHtml } from "./build/rehype/static-html.ts"
 import { remarkObsidian } from "./build/remark/obsidian.ts"
 import { createResolver, type Resolver } from "./build/resolve.ts"
 
@@ -36,7 +37,21 @@ export default defineConfig({
           remarkMath,
           [remarkObsidian, { resolver: getResolver }],
         ],
-        rehypePlugins: [rehypeSlug, rehypeKatex, rehypeKatexRaw],
+        rehypePlugins: [
+          rehypeSlug,
+          rehypeKatex,
+          [
+            rehypeShiki,
+            {
+              // 색은 CSS 변수로만 넣고 라이트/다크 전환은 global.css가 맡는다.
+              themes: { light: "github-light", dark: "github-dark" },
+              defaultColor: false,
+              fallbackLanguage: "text",
+              defaultLanguage: "text",
+            },
+          ],
+          rehypeStaticHtml,
+        ],
       }),
     },
     solid({ ssr: true }),

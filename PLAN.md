@@ -198,9 +198,7 @@ npm run build
 ## 7. 진행 단계
 
 - [x] **Phase 1. 뼈대**: Quartz 제거, Vite + Solid + MDX 설정, SSR entry, 모든 글을 prerender해서 정적 HTML로 출력, hydration 확인
-- [ ] **Phase 2. 콘텐츠 파이프라인**: 콘텐츠 인덱스, slug 규칙, 위키링크·callout·이미지·KaTeX·코드 하이라이팅, 기존 글 19개 이전과 `aliases` 설정
-  - [x] 위키링크·`![[이미지]]`·callout (`build/remark/obsidian.ts`), KaTeX, git 기반 작성·수정일
-  - [ ] 폴더 매핑과 `aliases` 리다이렉트, 코드 하이라이팅, frontmatter 스키마 검증
+- [x] **Phase 2. 콘텐츠 파이프라인**: 콘텐츠 인덱스, slug 규칙, 위키링크·callout·이미지·KaTeX·코드 하이라이팅(shiki), git 기반 날짜, 자동 description, frontmatter 스키마 검증(zod), 폴더 매핑과 예전 URL `aliases` 리다이렉트
 - [ ] **Phase 3. 페이지**: 레이아웃, 다크모드, 글 목록·글·섹션·태그·404, 목차, 백링크, giscus
 - [ ] **Phase 4. 출력과 배포**: OG 메타, RSS, sitemap, 리다이렉트, GitHub Actions 배포
 - [ ] **Phase 5. 랜딩**: 레이어 UI (Three.js) + 목록 대체 화면, 프로젝트 데이터 연결
@@ -212,7 +210,7 @@ Phase 1~4가 끝나면 지금 블로그를 완전히 대체한다. 그 시점에
 
 ## 8. 결정 사항
 
-- [x] 폴더 매핑: `수학정리 → notes/math`, `reading → notes/reading`, `project/memo → research`, `project/회고 → projects` (Phase 2에서 이동)
+- [x] 폴더 매핑: `수학정리 → notes/math`, `reading → notes/reading`, `project/memo → research`, `project/회고 → projects`. 예전 URL은 각 글의 `aliases`로 리다이렉트한다.
 - [x] 글 목록 경로: `/blog`
 - [ ] 42 SEOUL, MIT, MCQA 회고를 프로젝트 페이지로 볼지, 글로 둘지
 - [ ] 레이어 UI에 넣을 레이어와 조각 내용

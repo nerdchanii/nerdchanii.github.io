@@ -155,3 +155,20 @@ a:hover {
 .prose .callout-quote .callout-title {
   font-style: normal;
 }
+
+/* 코드 하이라이팅 (shiki, 색은 --shiki-light / --shiki-dark 변수로 들어온다) */
+.prose pre.shiki,
+.prose pre.shiki span {
+  color: var(--shiki-light);
+}
+
+.prose pre.shiki {
+  background: var(--code-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  .prose pre.shiki,
+  .prose pre.shiki span {
+    color: var(--shiki-dark);
+  }
+}

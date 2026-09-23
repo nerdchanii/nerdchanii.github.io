@@ -7,6 +7,7 @@ import { globSync } from "tinyglobby"
 import type { Plugin } from "vite"
 import { MEDIA_PREFIX, RESERVED_OUTPUT_NAMES, RESERVED_ROUTES } from "../src/lib/routes.ts"
 import { excerpt } from "./excerpt.ts"
+import { parseFrontmatter, type Frontmatter } from "./frontmatter.ts"
 import { normalizePath, slugifySegment } from "./slug.ts"
 
 export const CONTENT_DIR = fileURLToPath(new URL("../content", import.meta.url))
@@ -34,25 +35,13 @@ export type ContentEntry = {
   aliases: string[]
 }
 
-type Frontmatter = {
-  title?: string
-  slug?: string
-  tags?: string | string[]
-  date?: string | Date
-  description?: string
-  draft?: boolean
-  comments?: boolean
-  aliases?: string | string[]
-  alias?: string | string[]
-}
-
 function readFrontmatter(file: string): Frontmatter {
   return readSource(file).data
 }
 
 function readSource(file: string): { data: Frontmatter; body: string } {
   const { data, content } = matter(fs.readFileSync(file, "utf8"))
-  return { data: data as Frontmatter, body: content }
+  return { data: parseFrontmatter(data, path.relative(CONTENT_DIR, file)), body: content }
 }
 
 const toIso = (value: string | Date) => new Date(value).toISOString()
