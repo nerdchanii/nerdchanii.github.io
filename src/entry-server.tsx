@@ -15,6 +15,14 @@ export function feedItems() {
   }))
 }
 
+/** sitemap에 넣을 경로. 글은 마지막 수정일을 함께 넘긴다 */
+export function sitemapItems(): { url: string; lastmod: string | null }[] {
+  return routes().map((url) => {
+    const entry = findEntry(url)
+    return { url, lastmod: entry ? (entry.updated ?? entry.date) : null }
+  })
+}
+
 /** prerender 대상 경로. 고정 페이지 + 콘텐츠 전체 */
 export function routes(): string[] {
   return [...STATIC_ROUTES, ...entryUrls(), ...tags.map((t) => `/tags/${t.slug}`)]
