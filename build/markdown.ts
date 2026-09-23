@@ -14,6 +14,21 @@ import { SKIP, visit } from "unist-util-visit"
 export const WIKILINK = /(!?)\[\[([^\]|#]*)(#[^\]|]*)?(?:\|([^\]]*))?\]\]/g
 /** Quartz가 이미지로 임베드하던 확장자(png, jpg, jpeg, gif, bmp, svg, webp)에 avif를 더한다 */
 export const IMAGE_EXT = /\.(png|jpe?g|gif|bmp|webp|avif|svg)$/i
+/** Quartz가 `![[…]]`로 임베드하던 영상·소리·PDF 확장자 (webm은 영상으로 본다) */
+const VIDEO_EXT = /\.(mp4|webm|ogv|mov|mkv)$/i
+const AUDIO_EXT = /\.(mp3|wav|m4a|ogg|3gp|flac)$/i
+const PDF_EXT = /\.pdf$/i
+
+export type EmbedKind = "image" | "video" | "audio" | "pdf"
+
+/** `![[파일]]`로 임베드할 수 있는 파일이면 그 종류를 돌려준다 */
+export function embedKind(name: string): EmbedKind | undefined {
+  if (IMAGE_EXT.test(name)) return "image"
+  if (VIDEO_EXT.test(name)) return "video"
+  if (AUDIO_EXT.test(name)) return "audio"
+  if (PDF_EXT.test(name)) return "pdf"
+  return undefined
+}
 
 /**
  * Obsidian 본문 태그(`#태그`). Quartz의 규칙을 따른다:
@@ -35,11 +50,11 @@ export function matchTags(value: string): TagMatch[] {
 }
 
 /**
- * 위키링크 대상이 이미지 파일인지 가린다. `![[diagram#1.png]]`처럼 `#`까지 합쳐 이미지 파일명이면
- * 제목 조각이 아니라 파일명으로 본다.
+ * 위키링크 대상이 임베드할 파일(이미지·영상·소리·PDF)인지 가린다. `![[diagram#1.png]]`처럼 `#`까지 합쳐
+ * 파일명이 되면 제목 조각이 아니라 파일명으로 본다.
  */
 export function splitWikilink(bang: string, rawTarget: string, hash: string | undefined) {
-  const embedsFile = Boolean(bang) && IMAGE_EXT.test(rawTarget + (hash ?? ""))
+  const embedsFile = Boolean(bang) && embedKind(rawTarget + (hash ?? "")) !== undefined
   return {
     embedsFile,
     target: (embedsFile ? rawTarget + (hash ?? "") : rawTarget).trim(),

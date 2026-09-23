@@ -14,7 +14,7 @@ import {
 import { tagSlug } from "../src/lib/tags.ts"
 import { excerpt } from "./excerpt.ts"
 import { parseFrontmatter, type Frontmatter } from "./frontmatter.ts"
-import { parseMarkdown, scanBody, type BodyRef } from "./markdown.ts"
+import { IMAGE_EXT, parseMarkdown, scanBody, type BodyRef } from "./markdown.ts"
 import { createResolver, type Resolver } from "./resolve.ts"
 import { normalizePath, slugifySegment } from "./slug.ts"
 
@@ -149,7 +149,7 @@ function previewImage(
     const found =
       ref.kind === "image"
         ? fromUrl(ref.url)
-        : ref.kind === "wikilink" && ref.embedsFile
+        : ref.kind === "wikilink" && ref.embedsFile && IMAGE_EXT.test(ref.target)
           ? resolver.media(ref.target, entry.file)
           : undefined
     if (found) return found

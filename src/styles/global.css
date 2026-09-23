@@ -326,6 +326,23 @@ a:hover {
   padding: 0.25rem 0;
 }
 
+/* 임베드한 영상·소리·PDF */
+.prose video,
+.prose audio {
+  display: block;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.prose iframe.pdf {
+  display: block;
+  width: 100%;
+  height: 80vh;
+  margin: 1rem 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
 /* Obsidian callout */
 .prose .callout {
   margin: 1.25rem 0;

@@ -2,7 +2,8 @@
  * Obsidian 문법을 일반 마크다운 노드로 바꾼다.
  *
  * - `[[글]]`, `[[글|표시]]`, `[[글#제목]]`, `[[#제목]]` → 링크
- * - `![[image.png]]` → 이미지
+ * - `![[image.png]]`, `![[image.png|설명|300x200]]` → 이미지 (크기 지정 포함)
+ * - `![[clip.mp4]]`, `![[sound.mp3]]`, `![[paper.pdf]]` → video / audio / PDF iframe
  * - `> [!type] 제목` → callout (class가 붙은 blockquote)
  * - `#태그` → 태그 페이지 링크
  * - 일반 마크다운의 상대 경로(`[글](../other.md)`, `![](images/a.png)`) → 글 URL, `/_media/…`
@@ -21,7 +22,7 @@ import type {
 import { SKIP, visit } from "unist-util-visit"
 import type { VFile } from "vfile"
 import { tagUrl } from "../../src/lib/tags.ts"
-import { linkTextNodes, matchTags, splitWikilink, WIKILINK } from "../markdown.ts"
+import { embedKind, linkTextNodes, matchTags, splitWikilink, WIKILINK } from "../markdown.ts"
 import { isNotRelative, type Resolver } from "../resolve.ts"
 
 /** `[!type]`, `[!multi-column]`, `[!note|meta]`, 접기 표시 `+`/`-` (Quartz와 같은 규칙) */
@@ -50,12 +51,12 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
           parts.push({ type: "text", value: node.value.slice(last, match.index) })
         last = match.index + raw.length
 
-        // ![[image.png]] → 이미지
+        // ![[image.png]], ![[clip.mp4]] … → 미디어
         if (embedsFile) {
           const url = resolver().media(target, from)
-          if (url) parts.push({ type: "image", url, alt: label || target })
+          if (url) parts.push(embed(url, target, label))
           else {
-            warn(`이미지를 찾을 수 없음: ${target}`)
+            warn(`임베드할 파일을 찾을 수 없음: ${target}`)
             parts.push({ type: "text", value: raw })
           }
           continue
@@ -186,6 +187,43 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
 
 /** 콜아웃 제목 줄의 끝을 표시하는 자리표시자 (결과에는 남지 않는다) */
 const LINE_END: PhrasingContent = { type: "text", value: "" }
+
+/** Obsidian 이미지 크기 표기(`설명|300`, `300x200`). Quartz의 wikilinkImageEmbedRegex와 같다. */
+const IMAGE_SIZE = /^(?<alt>(?!^\d*x?\d*$).*?)?(\|?\s*?(?<width>\d+)(x(?<height>\d+))?)?$/
+
+/**
+ * `![[파일]]` 임베드 노드. 영상·소리·PDF는 image 노드의 태그만 바꿔(hName) 만든다.
+ * mdast→hast 변환이 src를 넣어 주고, alt는 이미지에만 남긴다.
+ */
+function embed(url: string, target: string, label: string | undefined): PhrasingContent {
+  const kind = embedKind(target)
+  if (kind === "image") {
+    const size = IMAGE_SIZE.exec(label ?? "")?.groups ?? {}
+    return {
+      type: "image",
+      url,
+      alt: size.alt?.trim() || target,
+      data: {
+        hProperties: {
+          ...(size.width ? { width: Number(size.width) } : {}),
+          ...(size.height ? { height: Number(size.height) } : {}),
+        },
+      },
+    }
+  }
+  const tag = kind === "pdf" ? "iframe" : (kind ?? "video")
+  return {
+    type: "image",
+    url,
+    data: {
+      hName: tag,
+      hProperties: {
+        alt: undefined,
+        ...(kind === "pdf" ? { className: ["pdf"], title: label || target } : { controls: true }),
+      },
+    },
+  }
+}
 
 function link(url: string, value: string): PhrasingContent {
   return { type: "link", url, children: [{ type: "text", value }] }
