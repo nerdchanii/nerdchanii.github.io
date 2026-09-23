@@ -7,7 +7,18 @@ export type Resolver = {
   page(target: string, fromFile: string): ContentEntry | undefined
   /** 파일 이름으로 미디어 파일을 찾아 공개 URL을 돌려준다 */
   media(name: string, fromFile: string): string | undefined
+  /**
+   * 일반 마크다운 링크의 상대 경로(`../other.md#제목`, `images/a.png`)를 글 기준으로 풀어 글이나 미디어를 찾는다.
+   * 외부 URL, 사이트 절대 경로(`/…`), 같은 글 안의 `#제목`은 대상이 아니다.
+   */
+  resolve(href: string, fromFile: string): Resolved | undefined
 }
+
+export type Resolved =
+  { kind: "page"; entry: ContentEntry; hash: string | undefined } | { kind: "media"; url: string }
+
+/** `https:`, `mailto:`, `//host`, `/path`, `#hash`처럼 글 기준 상대 경로가 아닌 링크 */
+export const isNotRelative = (href: string) => /^(?:[a-z][a-z\d+.-]*:|\/|#)/i.test(href)
 
 const norm = (s: string) => s.normalize("NFC").trim().toLowerCase()
 const stripExt = (s: string) => s.replace(/\.mdx?$/i, "")
@@ -32,6 +43,8 @@ export function createResolver(
 ): Resolver {
   const media = listMediaFiles()
   const byId = new Map(entries.map((e) => [e.id, e]))
+  const pageByPath = new Map(entries.map((e) => [norm(e.id), e]))
+  const mediaByPath = new Map(media.map((rel) => [norm(rel), rel]))
 
   return {
     page(target, fromFile) {
@@ -58,6 +71,35 @@ export function createResolver(
       )
       const rel = pickClosest(candidates, fromDir)
       return rel ? mediaUrl(rel) : undefined
+    },
+    resolve(href, fromFile) {
+      if (!href || isNotRelative(href)) return undefined
+      const [, rawPath, rawHash] = href.match(/^([^?#]*)(?:\?[^#]*)?(?:#(.*))?$/) ?? []
+      if (!rawPath) return undefined
+      let target: string = rawPath
+      let hash: string | undefined = rawHash
+      try {
+        target = decodeURIComponent(rawPath)
+        hash = rawHash === undefined ? undefined : decodeURIComponent(rawHash)
+      } catch {}
+      if (!target) return undefined
+
+      const fromDir = path.dirname(path.relative(CONTENT_DIR, fromFile))
+      const rel = path.posix.normalize(path.posix.join(fromDir.split(path.sep).join("/"), target))
+      if (rel.startsWith("../")) return undefined
+
+      // 확장자 없이 쓴 링크(`[글](other)`)도 글로 본다.
+      const entry =
+        pageByPath.get(norm(rel)) ??
+        pageByPath.get(norm(`${rel}.md`)) ??
+        pageByPath.get(norm(`${rel}.mdx`))
+      if (entry) return { kind: "page", entry, hash }
+      // `images/a#1.png`처럼 파일명에 `#`이 그대로 들어간 경우도 받아 준다 (`%23`이 맞는 표기).
+      const file =
+        mediaByPath.get(norm(rel)) ??
+        (hash === undefined ? undefined : mediaByPath.get(norm(`${rel}#${hash}`)))
+      if (file) return { kind: "media", url: mediaUrl(file) }
+      return undefined
     },
   }
 }

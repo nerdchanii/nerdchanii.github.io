@@ -5,14 +5,24 @@
  * - `![[image.png]]` → 이미지
  * - `> [!type] 제목` → callout (class가 붙은 blockquote)
  * - `#태그` → 태그 페이지 링크
+ * - 일반 마크다운의 상대 경로(`[글](../other.md)`, `![](images/a.png)`) → 글 URL, `/_media/…`
  */
 import GithubSlugger from "github-slugger"
-import type { Blockquote, Paragraph, PhrasingContent, Root, Text } from "mdast"
+import type {
+  Blockquote,
+  Definition,
+  Image,
+  Link,
+  Paragraph,
+  PhrasingContent,
+  Root,
+  Text,
+} from "mdast"
 import { SKIP, visit } from "unist-util-visit"
 import type { VFile } from "vfile"
 import { tagUrl } from "../../src/lib/tags.ts"
 import { matchTags } from "../inline-tags.ts"
-import type { Resolver } from "../resolve.ts"
+import { isNotRelative, type Resolver } from "../resolve.ts"
 
 const WIKILINK = /(!?)\[\[([^\]|#]*)(#[^\]|]*)?(?:\|([^\]]*))?\]\]/g
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|avif|svg)$/i
@@ -97,6 +107,21 @@ export function remarkObsidian({ resolver }: { resolver: () => Resolver }) {
       if (last < node.value.length) parts.push({ type: "text", value: node.value.slice(last) })
       parent.children.splice(index, 1, ...parts)
       return [SKIP, index + parts.length]
+    })
+
+    // 일반 마크다운 링크·이미지(참조식 정의 포함)의 상대 경로를 사이트 URL로 바꾼다.
+    visit(tree, ["link", "image", "definition"], (node) => {
+      const target = node as Link | Image | Definition
+      if (!target.url || isNotRelative(target.url)) return
+      const found = resolver().resolve(target.url, from)
+      if (!found) {
+        warn(`링크 대상을 찾을 수 없음: ${target.url}`)
+        return
+      }
+      target.url =
+        found.kind === "media"
+          ? found.url
+          : found.entry.url + (found.hash ? `#${headingId(found.hash)}` : "")
     })
 
     visit(tree, "blockquote", (node: Blockquote) => {

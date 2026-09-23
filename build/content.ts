@@ -113,6 +113,8 @@ function aliasUrl(alias: string, entryUrl: string, isIndex: boolean): string {
 const WIKILINK = /(?<!!)\[\[([^\]|#]*)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]/g
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|avif|svg)$/i
 const MD_LINK = /\]\((\/[^)\s]*)\)/g
+/** `[글](../other.md)`, `[글](<../다른 글.md>)` */
+const ANY_MD_LINK = /(?<!!)\[[^\]]*\]\((?:<([^>\n]+)>|([^)\s]+))/g
 
 /** 본문에서 다른 글로 가는 링크(위키링크, `/`로 시작하는 마크다운 링크)의 URL을 모은다 */
 /**
@@ -125,19 +127,39 @@ function previewImage(
   entry: ContentEntry,
   resolver: Resolver,
 ): string | null {
+  const external = (url: string) => /^https?:\/\//.test(url)
+  // 글 기준 상대 경로 → 없으면 파일 이름으로 찾는다 (Obsidian처럼)
+  const fromUrl = (url: string) => {
+    if (external(url) || url.startsWith("/")) return url
+    const found = resolver.resolve(url, entry.file)
+    if (found) return found.kind === "media" ? found.url : null
+    let name = url
+    try {
+      name = decodeURIComponent(url)
+    } catch {}
+    return resolver.media(name, entry.file) ?? null
+  }
+  if (explicit) return fromUrl(explicit)
+
   const text = body.replace(/^(```|~~~)[\s\S]*?^\1/gm, "")
-  const target =
-    explicit ??
-    [...text.matchAll(/!\[\[([^\]|]+)(?:\|[^\]]*)?\]\]|!\[[^\]]*\]\(<?([^)\s>]+)>?/g)]
-      .map((m) => (m[1] ?? m[2]).trim())
-      .find((t) => /^https?:\/\//.test(t) || IMAGE_EXT.test(t.split(/[?#]/)[0]))
-  if (!target) return null
-  if (/^https?:\/\//.test(target)) return target
-  let name = target
-  try {
-    name = decodeURIComponent(target)
-  } catch {}
-  return resolver.media(name.replace(/^\.?\//, ""), entry.file) ?? null
+  for (const [, embed, bracketed, bare] of text.matchAll(
+    /!\[\[([^\]|]+)(?:\|[^\]]*)?\]\]|!\[[^\]]*\]\((?:<([^>\n]+)>|([^)\s]+))/g,
+  )) {
+    const url = bracketed ?? bare
+    if (embed) {
+      // `![[diagram#1.png]]`처럼 `#`까지 합쳐 이미지 파일명이면 파일명으로 본다 (remarkObsidian과 같은 규칙).
+      const whole = embed.trim()
+      const name = IMAGE_EXT.test(whole) ? whole : whole.split("#")[0].trim()
+      if (!IMAGE_EXT.test(name)) continue
+      const found = resolver.media(name, entry.file)
+      if (found) return found
+    } else {
+      // `![](…)`는 문법상 이미지이므로 확장자로 거르지 않는다.
+      const found = fromUrl(url)
+      if (found) return found
+    }
+  }
+  return null
 }
 
 function outgoingLinks(
@@ -152,6 +174,11 @@ function outgoingLinks(
     if (!target.trim()) continue
     const url = resolver.page(target, entry.file)?.url
     if (url) found.add(url)
+  }
+  // 글 기준 상대 경로 링크(`[글](../other.md)`)
+  for (const [, bracketed, bare] of text.matchAll(ANY_MD_LINK)) {
+    const target = resolver.resolve(bracketed ?? bare, entry.file)
+    if (target?.kind === "page") found.add(target.entry.url)
   }
   for (const [, href] of text.matchAll(MD_LINK)) {
     let url = href.split(/[?#]/)[0]
