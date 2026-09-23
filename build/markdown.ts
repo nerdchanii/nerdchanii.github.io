@@ -5,9 +5,11 @@
 import type { Root, Text } from "mdast"
 import { fromMarkdown } from "mdast-util-from-markdown"
 import { gfmFromMarkdown } from "mdast-util-gfm"
+import { mdxFromMarkdown } from "mdast-util-mdx"
 import { mathFromMarkdown } from "mdast-util-math"
 import { gfm } from "micromark-extension-gfm"
 import { math } from "micromark-extension-math"
+import { mdxjs } from "micromark-extension-mdxjs"
 import { SKIP, visit } from "unist-util-visit"
 
 /** `[[글]]`, `![[파일]]`, `[[글#제목|표시]]`: 1=`!`, 2=대상, 3=`#제목`, 4=표시 */
@@ -159,19 +161,37 @@ const escapeWikilinkPipes = (text: string) =>
   text.replace(WIKILINK_SPAN, (link) => link.replace(/((^|[^\\])(\\\\)*)\|/g, "$1\\|"))
 
 /**
+ * 렌더러와 같은 문법으로 mdast를 만든다. `mdx`면 MDX 문법(ESM, `{식}`, JSX)도 읽어서
+ * import/export와 식 안의 글자가 본문 text로 섞이지 않게 한다.
+ */
+function parse(markdown: string, mdx: boolean): Root {
+  return fromMarkdown(markdown, {
+    extensions: mdx ? [mdxjs(), gfm(), math()] : [gfm(), math()],
+    mdastExtensions: mdx
+      ? [mdxFromMarkdown(), gfmFromMarkdown(), mathFromMarkdown()]
+      : [gfmFromMarkdown(), mathFromMarkdown()],
+  })
+}
+
+/** MDX에서 본문이 아니라 프로그램인 부분 (import/export, `{식}`) */
+const MDX_PROGRAM = ["mdxjsEsm", "mdxFlowExpression", "mdxTextExpression"]
+
+/**
  * 코드 블록(펜스·들여쓰기, 인용·목록 안 포함)과 수식 블록의 원문 위치. 마크다운 파서로 찾으므로
  * ```` ```` ```` 네 개짜리 펜스 안의 ``` 같은 경우도 CommonMark 규칙대로 처리된다.
- * `inline`이면 인라인 코드·수식도 포함한다.
+ * `inline`이면 인라인 코드·수식도 포함한다. `mdx`면 MDX 프로그램 부분도 포함한다.
  */
 export function codeRanges(
   markdown: string,
-  { inline = false } = {},
+  { inline = false, mdx = false } = {},
 ): [start: number, end: number, block: boolean][] {
-  const types = new Set(inline ? ["code", "math", "inlineCode", "inlineMath"] : ["code", "math"])
-  const tree = fromMarkdown(markdown, {
-    extensions: [gfm(), math()],
-    mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()],
-  })
+  const types = new Set([
+    "code",
+    "math",
+    ...(inline ? ["inlineCode", "inlineMath"] : []),
+    ...(mdx ? MDX_PROGRAM : []),
+  ])
+  const tree = parse(markdown, mdx)
   const ranges: [number, number, boolean][] = []
   visit(tree, (node) => {
     if (types.has(node.type) && node.position) {
@@ -184,12 +204,9 @@ export function codeRanges(
   return ranges.sort((a, b) => a[0] - b[0])
 }
 
-/** `obsidian`이 false면 (.mdx) Obsidian 전처리를 하지 않는다 */
-export function parseMarkdown(markdown: string, { obsidian = true } = {}): Root {
-  return fromMarkdown(obsidian ? preprocessObsidian(markdown) : markdown, {
-    extensions: [gfm(), math()],
-    mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()],
-  })
+/** .md 노트는 Obsidian 전처리를 거쳐 읽는다. `mdx`(.mdx)는 전처리 없이 MDX 문법으로 읽는다 */
+export function parseMarkdown(markdown: string, { mdx = false } = {}): Root {
+  return mdx ? parse(markdown, true) : parse(preprocessObsidian(markdown), false)
 }
 
 /** 본문에 보이는 순서대로 나오는 참조. 코드·수식은 text 노드가 아니므로 저절로 빠진다. */

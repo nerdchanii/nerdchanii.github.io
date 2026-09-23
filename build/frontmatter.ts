@@ -43,6 +43,8 @@ export const frontmatterSchema = z
     comments: optional(z.boolean()),
     aliases: list,
     alias: list,
+    /** Quartz 시절의 고정 주소. Quartz처럼 alias 하나로 취급해 리다이렉트를 만든다 */
+    permalink: optional(text),
   })
   .loose()
 

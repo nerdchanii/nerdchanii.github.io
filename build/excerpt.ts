@@ -6,11 +6,12 @@ import { codeRanges } from "./markdown.ts"
 
 const MAX_LENGTH = 160
 
-export function excerpt(markdown: string): string | null {
+/** `mdx`면 MDX 프로그램 부분(import/export, `{식}`)도 뺀다 */
+export function excerpt(markdown: string, { mdx = false } = {}): string | null {
   // 코드·수식 블록은 마크다운 파서로 위치를 찾아 뺀다 (들여쓴 펜스, 인용 안 펜스, 긴 펜스 포함).
   let prose = ""
   let last = 0
-  for (const [start, end] of codeRanges(markdown)) {
+  for (const [start, end] of codeRanges(markdown, { mdx })) {
     prose += markdown.slice(last, start) + " "
     last = end
   }

@@ -272,10 +272,13 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
 
     const git = withDates ? gitDates(file) : { created: null, updated: null }
     const rawAliases = [...toList(fm.aliases), ...toList(fm.alias)]
+    // Quartz는 permalink를 alias 목록에 더했다. 옮기기 전 주소(commentPath)를 찾을 때는 쓰지 않는다.
+    const permalink = fm.permalink?.trim()
     const oldPath = rawAliases.find((a) => a.startsWith("/"))
-    // Obsidian 문법(주석, 위키링크 이스케이프)은 .md 노트에만 적용한다. .mdx는 JS/JSX가 섞여 있어 원문 그대로 둔다.
-    const obsidian = !file.endsWith(".mdx")
-    const refs = scanBody(parseMarkdown(body, { obsidian }))
+    // Obsidian 전처리(주석, 위키링크 이스케이프)는 .md 노트에만 적용한다. .mdx는 MDX 문법으로 읽어서
+    // import/export와 `{식}` 안의 글자를 링크·태그로 세지 않는다.
+    const mdx = file.endsWith(".mdx")
+    const refs = scanBody(parseMarkdown(body, { mdx }))
     bodyRefs.set(id, refs)
     const ogImage = fm.image ?? fm.cover ?? fm.socialImage
     if (ogImage) images.set(id, ogImage)
@@ -295,10 +298,12 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
       date: toIsoOr(fm.date ?? fm.created ?? fm.published ?? fm.publishDate, git.created),
       updated: toIsoOr(fm.updated ?? fm.modified ?? fm.lastmod ?? fm["last-modified"], git.updated),
       // Quartz처럼 description이 없으면 본문 앞부분으로 만든다.
-      description: fm.description ?? excerpt(obsidian ? preprocessObsidian(body) : body),
+      description: fm.description ?? excerpt(mdx ? body : preprocessObsidian(body), { mdx }),
       draft: false,
       comments: fm.comments ?? true,
-      aliases: rawAliases.map((a) => aliasUrl(a, url, isIndex)),
+      aliases: [...rawAliases, ...(permalink ? [permalink] : [])].map((a) =>
+        aliasUrl(a, url, isIndex),
+      ),
       links: [],
       image: null,
       commentPath: oldPath ? aliasUrl(oldPath, url, isIndex) : url,
