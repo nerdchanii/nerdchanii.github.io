@@ -196,8 +196,14 @@ function uniqueTags(tags: string[]): string[] {
  * content/ 아래의 모든 글을 스캔해서 URL이 확정된 목록을 만든다.
  * `withDates`가 false면 git을 호출하지 않는다 (링크 해석처럼 날짜가 필요 없을 때).
  */
+/**
+ * 빌드에서 빼는 폴더. Quartz의 ignorePatterns(`private`, `templates`, `.obsidian`)와 같다.
+ * 점으로 시작하는 파일·폴더(`.obsidian` 등)는 tinyglobby가 기본으로 건너뛴다.
+ */
+const CONTENT_IGNORE = ["**/private/**", "**/templates/**"]
+
 export function loadContent({ withDates = true } = {}): ContentEntry[] {
-  const files = globSync("**/*.{md,mdx}", { cwd: CONTENT_DIR }).sort()
+  const files = globSync("**/*.{md,mdx}", { cwd: CONTENT_DIR, ignore: CONTENT_IGNORE }).sort()
 
   // 폴더 index의 frontmatter slug는 그 폴더의 URL 조각을 바꾼다.
   const dirSlugs = new Map<string, string>()
@@ -300,7 +306,7 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
 
 /** content/ 안의 글이 아닌 파일(이미지 등). content/ 기준 상대 경로 */
 export function listMediaFiles(): string[] {
-  return globSync("**/*", { cwd: CONTENT_DIR, ignore: ["**/*.{md,mdx}"] }).sort()
+  return globSync("**/*", { cwd: CONTENT_DIR, ignore: ["**/*.{md,mdx}", ...CONTENT_IGNORE] }).sort()
 }
 
 /** 미디어 파일의 공개 URL (`/_media/devlog/images/x.png`) */
@@ -344,12 +350,17 @@ export function contentPlugin({ onChange }: { onChange?: () => void } = {}): Plu
       }
     },
     configureServer(server) {
-      // dev 서버에서 /_media/ 요청을 content/ 파일로 응답한다.
+      // dev 서버에서 /_media/ 요청을 content/ 파일로 응답한다. 빌드가 내보내는 미디어 파일만 준다.
       server.middlewares.use(`/${MEDIA_PREFIX}/`, (req, res, next) => {
-        const rel = decodeURIComponent((req.url ?? "").split("?")[0]).replace(/^\/+/, "")
-        const file = path.resolve(CONTENT_DIR, rel)
-        if (!file.startsWith(CONTENT_DIR + path.sep) || !fs.existsSync(file)) return next()
-        fs.createReadStream(file).pipe(res)
+        let rel: string
+        try {
+          rel = decodeURIComponent((req.url ?? "").split("?")[0]).replace(/^\/+/, "")
+        } catch {
+          return next()
+        }
+        const match = listMediaFiles().find((m) => m.normalize("NFC") === rel.normalize("NFC"))
+        if (!match) return next()
+        fs.createReadStream(path.join(CONTENT_DIR, match)).pipe(res)
       })
 
       // 글이 추가·삭제·수정되면 목록(frontmatter, URL)을 다시 만든다.

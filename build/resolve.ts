@@ -74,7 +74,7 @@ export function createResolver(
     },
     resolve(href, fromFile) {
       if (!href || isNotRelative(href)) return undefined
-      const [, rawPath, rawHash] = href.match(/^([^?#]*)(?:\?[^#]*)?(?:#(.*))?$/) ?? []
+      const [, rawPath, rawQuery = "", rawHash] = href.match(/^([^?#]*)(\?[^#]*)?(?:#(.*))?$/) ?? []
       if (!rawPath) return undefined
       let target: string = rawPath
       let hash: string | undefined = rawHash
@@ -95,10 +95,14 @@ export function createResolver(
         pageByPath.get(norm(`${rel}.mdx`))
       if (entry) return { kind: "page", entry, hash }
       // `images/a#1.png`처럼 파일명에 `#`이 그대로 들어간 경우도 받아 준다 (`%23`이 맞는 표기).
-      const file =
-        mediaByPath.get(norm(rel)) ??
-        (hash === undefined ? undefined : mediaByPath.get(norm(`${rel}#${hash}`)))
-      if (file) return { kind: "media", url: mediaUrl(file) }
+      // 미디어의 `?query`, `#t=30` 같은 꼬리는 쓴 그대로 붙여 준다.
+      const file = mediaByPath.get(norm(rel))
+      if (file) {
+        const suffix = rawQuery + (rawHash === undefined ? "" : `#${rawHash}`)
+        return { kind: "media", url: mediaUrl(file) + suffix }
+      }
+      const hashed = hash === undefined ? undefined : mediaByPath.get(norm(`${rel}#${hash}`))
+      if (hashed) return { kind: "media", url: mediaUrl(hashed) }
       return undefined
     },
   }
