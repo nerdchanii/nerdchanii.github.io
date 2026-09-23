@@ -162,7 +162,8 @@ function outgoingLinks(
   refs: BodyRef[],
   entry: ContentEntry,
   resolver: Resolver,
-  urls: Set<string>,
+  /** 글 URL과 alias(예전 URL) → 글 URL. 대소문자는 URL 검증과 같이 구분하지 않는다 */
+  urls: Map<string, string>,
 ): string[] {
   const found = new Set<string>()
   for (const ref of refs) {
@@ -172,7 +173,8 @@ function outgoingLinks(
     } else if (ref.kind === "link" && ref.url.startsWith("/") && !ref.url.startsWith("//")) {
       // 앱에서 `findEntry()`가 찾는 것과 같은 규칙으로 맞춘다 (`/a/b/index.html` → `/a/b`).
       const url = canonicalPath(ref.url.split(/[?#]/)[0])
-      if (urls.has(url)) found.add(url)
+      const target = urls.get(url.toLowerCase())
+      if (target) found.add(target)
     } else if (ref.kind === "link") {
       const target = resolver.resolve(ref.url, entry.file)
       if (target?.kind === "page") found.add(target.entry.url)
@@ -294,7 +296,11 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
   }
 
   const resolver = createResolver(entries)
-  const urls = new Set(entries.map((e) => e.url))
+  const urls = new Map<string, string>()
+  for (const entry of entries) {
+    urls.set(entry.url.toLowerCase(), entry.url)
+    for (const alias of entry.aliases) urls.set(alias.toLowerCase(), entry.url)
+  }
   for (const entry of entries) {
     const refs = bodyRefs.get(entry.id) ?? []
     entry.links = outgoingLinks(refs, entry, resolver, urls)
