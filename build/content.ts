@@ -192,6 +192,11 @@ function outgoingLinks(
   return [...found]
 }
 
+/** frontmatter 날짜가 있으면 ISO로 바꾸고, 없으면 git 날짜를 쓴다 */
+function toIsoOr(value: string | Date | undefined, fallback: string | null): string | null {
+  return value ? toIso(value) : fallback
+}
+
 function uniqueTags(tags: string[]): string[] {
   const seen = new Set<string>()
   return tags.filter((tag) => {
@@ -282,10 +287,11 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
       // frontmatter 태그 뒤에 본문 `#태그`를 붙인다. 같은 태그는 한 번만 둔다.
       tags: uniqueTags([
         ...toList(fm.tags),
+        ...toList(fm.tag),
         ...refs.flatMap((ref) => (ref.kind === "tag" ? [ref.tag] : [])),
       ]),
-      date: fm.date ? toIso(fm.date) : git.created,
-      updated: fm.updated ? toIso(fm.updated) : git.updated,
+      date: toIsoOr(fm.date ?? fm.created ?? fm.published ?? fm.publishDate, git.created),
+      updated: toIsoOr(fm.updated ?? fm.modified ?? fm.lastmod ?? fm["last-modified"], git.updated),
       // Quartz처럼 description이 없으면 본문 앞부분으로 만든다.
       description: fm.description ?? excerpt(preprocessObsidian(body)),
       draft: false,

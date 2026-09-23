@@ -2,13 +2,22 @@
  * 글 본문(마크다운 원문)에서 description으로 쓸 요약을 만든다.
  * 검색 결과·링크 미리보기용이므로 제목, 코드, 수식 블록 같은 구조는 빼고 문장만 남긴다.
  */
+import { codeBlockRanges } from "./markdown.ts"
+
 const MAX_LENGTH = 160
 
 export function excerpt(markdown: string): string | null {
-  const text = markdown
+  // 코드·수식 블록은 마크다운 파서로 위치를 찾아 뺀다 (들여쓴 펜스, 인용 안 펜스, 긴 펜스 포함).
+  let prose = ""
+  let last = 0
+  for (const [start, end] of codeBlockRanges(markdown)) {
+    prose += markdown.slice(last, start) + " "
+    last = end
+  }
+  prose += markdown.slice(last)
+
+  const text = prose
     // 블록 단위로 빼는 것들
-    .replace(/^(```|~~~)[\s\S]*?^\1/gm, " ") // 코드 블록
-    .replace(/\$\$[\s\S]*?\$\$/g, " ") // 수식 블록
     .replace(/^#{1,6}\s.*$/gm, " ") // 제목
     .replace(/^>\s*\[![^\]]*\].*$/gm, " ") // callout 머리줄
     // 인라인 요소는 보이는 글자만 남긴다

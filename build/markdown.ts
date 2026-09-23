@@ -129,7 +129,7 @@ export function preprocessObsidian(markdown: string): string {
  * ```` ```` ```` 네 개짜리 펜스 안의 ``` 같은 경우도 CommonMark 규칙대로 처리된다.
  * 표 인식이 깨지지 않도록 인라인 코드는 보호하지 않는다 (Quartz도 전체 원문에 적용했다).
  */
-function codeBlockRanges(markdown: string): [number, number][] {
+export function codeBlockRanges(markdown: string): [number, number][] {
   const tree = fromMarkdown(markdown, {
     extensions: [gfm(), math()],
     mdastExtensions: [gfmFromMarkdown(), mathFromMarkdown()],

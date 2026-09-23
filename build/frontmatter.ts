@@ -23,8 +23,17 @@ export const frontmatterSchema = z
     title: optional(text),
     slug: optional(text),
     tags: list,
+    /** Quartz가 받던 `tags`의 다른 이름 */
+    tag: list,
     date: optional(date),
     updated: optional(date),
+    // Quartz가 받던 다른 이름들 (created/published/publishDate = date, modified/lastmod/last-modified = updated)
+    created: optional(date),
+    published: optional(date),
+    publishDate: optional(date),
+    modified: optional(date),
+    lastmod: optional(date),
+    "last-modified": optional(date),
     description: optional(z.string()),
     /** 링크 미리보기 이미지. `cover`도 같은 뜻이고, `socialImage`는 Quartz 시절 이름 */
     image: optional(text),

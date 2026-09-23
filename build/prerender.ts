@@ -47,7 +47,7 @@ function redirectPage(to: string): string {
 <link rel="canonical" href="${href}">
 <meta name="robots" content="noindex">
 <meta http-equiv="refresh" content="0; url=${href}">
-<script>location.replace(${JSON.stringify(encodeURI(to))} + location.hash)</script>
+<script>location.replace(${JSON.stringify(encodeURI(to))} + location.search + location.hash)</script>
 </head>
 <body><a href="${href}">${href}</a></body>
 </html>
