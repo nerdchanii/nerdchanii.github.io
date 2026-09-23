@@ -36,7 +36,7 @@ export type ContentEntry = {
 type Frontmatter = {
   title?: string
   slug?: string
-  tags?: string[]
+  tags?: string | string[]
   date?: string | Date
   description?: string
   draft?: boolean
@@ -79,8 +79,14 @@ function gitDates(file: string) {
   return result
 }
 
-const toList = (value: string | string[] | undefined) =>
-  value === undefined ? [] : Array.isArray(value) ? value : [value]
+/**
+ * frontmatter 목록 값을 배열로 맞춘다. Quartz처럼 문자열 하나는 쉼표로 나눈다
+ * (`aliases: old-a, old-b` → `["old-a", "old-b"]`).
+ */
+const toList = (value: string | string[] | undefined): string[] =>
+  (value === undefined ? [] : Array.isArray(value) ? value : value.split(","))
+    .map((v) => String(v).trim())
+    .filter(Boolean)
 
 /**
  * frontmatter alias를 사이트 경로로 바꾼다. Quartz와 같은 규칙을 따른다.
@@ -158,7 +164,7 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
       title: fm.title ?? (isIndex ? path.basename(dir) : name).normalize("NFC"),
       section: dir === "." ? "" : id.split("/")[0].normalize("NFC"),
       isIndex,
-      tags: fm.tags ?? [],
+      tags: toList(fm.tags),
       date: fm.date ? toIso(fm.date) : git.created,
       updated: git.updated,
       description: fm.description ?? null,
