@@ -12,7 +12,8 @@ export function slugifySegment(segment: string): string {
 
   // URL 조각은 그대로 dist/ 아래 경로가 되므로, 한 단계짜리 이름만 허용한다.
   // `.`으로 시작하는 이름(`..`, `.nojekyll` 등)도 막는다.
-  if (slug === "" || slug.startsWith(".") || slug.includes("/")) {
+  // 모든 페이지는 `{경로}/index.html`로 저장되므로 `index.html`은 어느 단계에서도 쓸 수 없다.
+  if (slug === "" || slug.startsWith(".") || slug.includes("/") || slug === "index.html") {
     throw new Error(`사용할 수 없는 slug: ${JSON.stringify(segment)}`)
   }
   return slug
