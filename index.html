@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // 첫 페인트 전에 테마를 정해 깜빡임을 막는다. 저장된 값이 없으면 시스템 설정을 따른다.
+      ;(function () {
+        var theme
+        try {
+          theme = localStorage.getItem("theme")
+        } catch (e) {}
+        if (theme !== "light" && theme !== "dark") {
+          theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+        }
+        document.documentElement.dataset.theme = theme
+      })()
+    </script>
+    <link rel="icon" href="/favicon.ico" sizes="48x48" type="image/png" />
+    <link rel="apple-touch-icon" href="/icon.png" />
+    <link rel="alternate" type="application/rss+xml" title="chanii's notes" href="/index.xml" />
+    <!--app-head-->
+  </head>
+  <body>
+    <div id="app"><!--app-html--></div>
+    <script type="module" src="/src/entry-client.tsx"></script>
+  </body>
+</html>
