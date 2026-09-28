@@ -21,7 +21,7 @@ tags:
 
 ### EDA 보조 : Tracing the Origins of the Training Data
 
-데이터 전처리에 참여했다. 우리에게 주어진 문제는 기존에 존재하던 몇가지 데이터셋을 GPT-4o를 이용해 augmentation한 자료였고, 지문과 문제들의 출처를 다시 태깅할 수 있도록 source tagging을 담당했다. data Leaks의 문제가 발생할 수 있어, 
+데이터 전처리에 참여했다. 우리에게 주어진 문제는 기존에 존재하던 몇가지 데이터셋을 GPT-4o를 이용해 augmentation한 자료였고, 지문과 문제들의 출처를 다시 태깅할 수 있도록 source tagging을 담당했다. 출처가 겹치는 데이터가 학습과 평가에 동시에 섞이면 data leak 문제가 생길 수 있어, 지문과 문제마다 원 출처를 남겨 이를 확인할 수 있게 하려는 작업이었다.
 
 ---
 
