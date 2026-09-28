@@ -5,6 +5,7 @@ import ThemeToggle from "../components/ThemeToggle.tsx"
 import { trackPageView } from "../lib/analytics.ts"
 import { findEntry } from "../lib/content.ts"
 import { counterpart, langOf, localize } from "../lib/i18n.ts"
+import { canonicalPath } from "../lib/routes.ts"
 import { AUTHOR, GITHUB_URL, NAV, SITE_NAME } from "../lib/site.ts"
 import About from "../pages/About.tsx"
 import Blog from "../pages/Blog.tsx"
@@ -24,7 +25,9 @@ function Layout(props: RouteSectionProps) {
   // 첫 페이지와 클라이언트 이동마다 page_view를 보낸다. 제목(<Title>)이 바뀐 뒤에 읽도록 한 틱 미룬다.
   // effect는 브라우저에서만 돌기 때문에 prerender 결과에는 영향이 없다.
   const route = useLocation()
-  const lang = () => langOf(route.pathname)
+  // GitHub Pages는 `/work`를 `/work/`로 보내므로 끝의 `/` 등을 떼고 비교한다.
+  const path = () => canonicalPath(route.pathname)
+  const lang = () => langOf(path())
   createEffect(
     on(
       () => route.pathname,
@@ -35,7 +38,7 @@ function Layout(props: RouteSectionProps) {
   createEffect(() => (document.documentElement.lang = lang()))
 
   return (
-    <div class="shell" classList={{ wide: WIDE.has(route.pathname) }}>
+    <div class="shell" classList={{ wide: WIDE.has(path()) }}>
       <Title>{SITE_NAME}</Title>
       <header class="site-header">
         <A href={localize(lang(), "/")} class="site-name" end>
@@ -55,7 +58,7 @@ function Layout(props: RouteSectionProps) {
             )}
           </For>
           <A
-            href={counterpart(route.pathname)}
+            href={counterpart(path())}
             class="lang-switch"
             hreflang={lang() === "ko" ? "en" : "ko"}
             aria-label={lang() === "ko" ? "Read in English" : "한국어로 보기"}

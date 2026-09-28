@@ -197,7 +197,7 @@ export const SELECTED_WORKS: Work[] = [
     },
     result: {
       ko: "에이전트 파트를 맡아 최종 발표까지 마쳤고, 프로젝트 이후 LLM-as-a-Judge로 프롬프트를 정량 평가했습니다.",
-      en: "Led the agent part through the final demo, then evaluated prompts quantitatively with LLM-as-a-Judge after the project.",
+      en: "Owned the agent part through the final demo, then evaluated prompts quantitatively with LLM-as-a-Judge after the project.",
     },
     links: [
       {
@@ -373,7 +373,7 @@ export const TIMELINE: Milestone[] = [
     when: "2020 – 2023",
     what: {
       ko: "한국방송통신대학교 컴퓨터과학과",
-      en: "B.S. Computer Science, Korea National Open University",
+      en: "Computer Science, Korea National Open University",
     },
   },
   {
