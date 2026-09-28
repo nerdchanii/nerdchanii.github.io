@@ -4,6 +4,7 @@ tags:
   - MRC
 aliases:
   - "/project/memo/ODQA-주요-Task"
+  - "/research/ODQA-주요-Task"
 ---
 ## MRC(Machine Reading Comprehension)
 

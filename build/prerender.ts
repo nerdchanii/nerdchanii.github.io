@@ -27,9 +27,12 @@ const { routes, redirects, feedItems, sitemapItems, render } = (await import(
 )) as ServerEntry
 const template = fs.readFileSync(path.join(dist, "index.html"), "utf8")
 
-function fill(page: { html: string; head: string }): string {
+function fill(page: { html: string; head: string }, url = ""): string {
+  // 영어 소개 페이지(`/en/…`)는 문서 언어를 바꾼다. 나머지는 템플릿의 ko 그대로다.
+  const lang = url === "/en" || url.startsWith("/en/") ? "en" : "ko"
   // 치환 문자열의 `$&`, `$$` 같은 패턴이 해석되지 않도록 콜백으로 넣는다.
   return template
+    .replace('<html lang="ko">', () => `<html lang="${lang}">`)
     .replace("<!--app-head-->", () => page.head)
     .replace("<!--app-html-->", () => page.html)
 }
@@ -65,7 +68,7 @@ function write(file: string, content: string) {
 
 const urls = routes()
 for (const url of urls) {
-  write(path.join(dist, url, "index.html"), fill(await render(url)))
+  write(path.join(dist, url, "index.html"), fill(await render(url), url))
 }
 
 const aliases = redirects()

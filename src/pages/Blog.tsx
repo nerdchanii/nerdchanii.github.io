@@ -1,3 +1,4 @@
+import { A } from "@solidjs/router"
 import { For } from "solid-js"
 import PostList from "../components/PostList.tsx"
 import Seo from "../components/Seo.tsx"
@@ -17,8 +18,15 @@ function byYear(list: Entry[]): [string, Entry[]][] {
 export default function Blog() {
   return (
     <>
-      <Seo title="Blog" description="전체 글 목록" path="/blog" />
-      <h1>Blog</h1>
+      <Seo title="Writing" description="전체 글 목록" path="/blog" />
+      <header class="list-head">
+        <p class="eyebrow">§ 3 — WRITING</p>
+        <h1>Writing</h1>
+        <p class="page-sub">
+          조사 기록, 회고, 공부 노트. 전체 글을 연도별로 모았습니다.{" "}
+          <A href="/tags">태그로 보기 →</A>
+        </p>
+      </header>
       <For each={byYear(posts)}>
         {([year, list]) => (
           <section class="year-group">

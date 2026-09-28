@@ -1,5 +1,6 @@
 import { Link, Meta, Title } from "@solidjs/meta"
 import { Show } from "solid-js"
+import { counterpart, type Lang } from "../lib/i18n.ts"
 import { DEFAULT_OG_IMAGE, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "../lib/site.ts"
 
 type Props = {
@@ -11,6 +12,10 @@ type Props = {
   /** 절대 URL 또는 `/…` 경로 (이미 인코딩된 값) */
   image?: string | null
   article?: { published: string | null; modified: string | null }
+  /** 페이지 언어. 두 언어로 있는 페이지(홈, About, Work)는 짝 페이지를 hreflang으로 알린다 */
+  lang?: Lang
+  /** 두 언어로 제공하는 페이지면 true */
+  bilingual?: boolean
 }
 
 /** 문서 제목, description, canonical, Open Graph, Twitter 카드 */
@@ -36,7 +41,16 @@ export default function Seo(props: Props) {
         )}
       </Show>
       <Meta property="og:site_name" content={SITE_NAME} />
-      <Meta property="og:locale" content="ko_KR" />
+      <Meta property="og:locale" content={props.lang === "en" ? "en_US" : "ko_KR"} />
+      <Show when={props.bilingual && props.path}>
+        {(path) => (
+          <Link
+            rel="alternate"
+            hreflang={props.lang === "en" ? "ko" : "en"}
+            href={SITE_URL + counterpart(path())}
+          />
+        )}
+      </Show>
       <Meta property="og:type" content={props.article ? "article" : "website"} />
       <Meta property="og:title" content={props.title ?? SITE_NAME} />
       <Meta property="og:description" content={description()} />
