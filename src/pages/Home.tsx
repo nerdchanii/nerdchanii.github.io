@@ -10,7 +10,7 @@ export default function Home(props: { lang: Lang }) {
         path={localize(props.lang, "/")}
         lang={props.lang}
         bilingual
-        description={HOME.intro.map((line) => line[props.lang]).join(" ")}
+        description={HOME.description[props.lang]}
       />
       <Timeline lang={props.lang} />
     </>

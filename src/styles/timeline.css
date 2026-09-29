@@ -183,6 +183,42 @@
   font-size: var(--fs-0);
 }
 
+/* 인사 아래의 인용: 원문을 크게, 번역과 출처를 작게 */
+.tl-quote {
+  max-width: 760px;
+  margin: 0;
+}
+
+.tl-quote blockquote {
+  margin: 0;
+}
+
+.tl-intro .tl-quote p {
+  max-width: none;
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(20px, 2.4vw, var(--fs-1));
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.45;
+}
+
+.tl-quote figcaption {
+  display: grid;
+  gap: 4px;
+  margin-top: var(--sp-2);
+  color: var(--text-muted);
+}
+
+.tl-quote-translation {
+  font-size: 14px;
+}
+
+.tl-quote cite {
+  font: 500 12px var(--font-mono);
+  font-style: normal;
+}
+
 .tl-intro .tl-hint {
   display: flex;
   align-items: center;

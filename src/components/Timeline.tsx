@@ -44,7 +44,7 @@ const ROW_EM = 1.08
 const FOUND_STORE = "timeline-found"
 const MOBILE = "(max-width: 800px)"
 const NO_DRAW =
-  "a, button, h1, h2, p, b, .note, .tick, .tl-rail, .tl-mark, .tl-tools, .tl-secret, .tl-counter"
+  "a, button, h1, h2, p, b, .note, .tl-quote, .tick, .tl-rail, .tl-mark, .tl-tools, .tl-secret, .tl-counter"
 
 /** 스프링 위치 (0 → 1). mass 1, stiffness (2π/d)², damping 4π(1 − bounce)/d */
 function springAt(t: number, s: Spring) {
@@ -631,7 +631,15 @@ export default function Timeline(props: { lang: Lang }) {
           })}
         </p>
         <h1>{t(HOME.hello)}</h1>
-        <For each={HOME.intro}>{(line) => <p>{t(line)}</p>}</For>
+        <figure class="tl-quote">
+          <blockquote lang={HOME.quote.lang}>
+            <p>{HOME.quote.text}</p>
+          </blockquote>
+          <figcaption>
+            <span class="tl-quote-translation">{t(HOME.quote.translation)}</span>
+            <cite>— {t(HOME.quote.source)}</cite>
+          </figcaption>
+        </figure>
         <p class="tl-hint">
           <i aria-hidden="true" /> {t(HOME.hint)}
         </p>

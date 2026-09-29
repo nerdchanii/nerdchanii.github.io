@@ -448,7 +448,10 @@ export const ABOUT_INTRO: Text[] = [
 /** 홈(타임라인)의 문구 */
 export const HOME: {
   hello: Text
-  intro: Text[]
+  /** 인사 아래의 인용. 원문을 크게, 번역과 출처를 작게 보인다 */
+  quote: { text: string; lang: string; translation: Text; source: Text }
+  /** 검색 결과와 공유 카드에 보이는 설명 */
+  description: Text
   /** {from} {to} {years} {items}을 채운다 */
   summary: Text
   hint: Text
@@ -467,16 +470,20 @@ export const HOME: {
   close: Text
 } = {
   hello: { ko: "안녕하세요, 김예찬입니다.", en: "Hello, I'm Yechan Kim." },
-  intro: [
-    {
-      ko: "AI 에이전트에게 일을 맡길 때 무엇을 맡기고 무엇을 사람에게 물어야 하는지 고민하고, 그걸 돕는 도구를 만들고 있습니다.",
-      en: "I think about what to hand to an AI agent and what it should ask a person, and I build tools that help with that.",
+  quote: {
+    // 『나와 너』(Ich und Du, 1923) 1부, 예술의 근원을 말하는 대목. 번역은 원문에서 직접 옮겼다.
+    text: "Diene ich ihm nicht recht, so zerbricht es, oder es zerbricht mich.",
+    lang: "de",
+    translation: {
+      ko: "제대로 섬기지 않으면 작품이 부서지거나, 작품이 나를 부순다.",
+      en: "If I do not serve it rightly, it breaks, or it breaks me.",
     },
-    {
-      ko: "이곳은 그 과정에서 배우고 부딪힌 것들을 정리해두는 기록장입니다.",
-      en: "This is where I write down what I learn and run into along the way.",
-    },
-  ],
+    source: { ko: "마르틴 부버, 『나와 너』", en: "Martin Buber, I and Thou" },
+  },
+  description: {
+    ko: "'왜?'가 풀릴 때까지 파고드는 개발자 김예찬(nerdchanii)의 기록. 요즘 파고 있는 건 AI 에이전트입니다.",
+    en: 'Notes from Yechan Kim (nerdchanii), a developer who digs until the "why" is answered. These days I\'m digging into AI agents.',
+  },
   summary: {
     ko: "{from} – {to} · {years}개의 해 · 기록 {items}개",
     en: "{from} – {to} · {years} years · {items} records",
