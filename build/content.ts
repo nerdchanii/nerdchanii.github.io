@@ -332,7 +332,11 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
 
 /** content/ 안의 글이 아닌 파일(이미지 등). content/ 기준 상대 경로 */
 export function listMediaFiles(): string[] {
-  return globSync("**/*", { cwd: CONTENT_DIR, ignore: ["**/*.{md,mdx}", ...CONTENT_IGNORE] }).sort()
+  // timeline.yml은 홈 타임라인 데이터라 공개 미디어로 복사하지 않는다.
+  return globSync("**/*", {
+    cwd: CONTENT_DIR,
+    ignore: ["**/*.{md,mdx}", "timeline.yml", ...CONTENT_IGNORE],
+  }).sort()
 }
 
 /** 미디어 파일의 공개 URL (`/_media/devlog/images/x.png`) */

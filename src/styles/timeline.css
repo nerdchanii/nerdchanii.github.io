@@ -1,0 +1,987 @@
+/*
+ * 홈 타임라인. 흰 도화지 위에 연도별 기록을 늘어놓는다.
+ *
+ * 황금비(φ = 1.618)로 맞춘다.
+ * - 글자 크기: 16px에 φ를 거듭 곱한 값 (16 → 26 → 42 → 68 → 110)
+ * - 간격: 피보나치 수 (8, 13, 21, 34, 55, 89)
+ * - 칸 나눔: 왼쪽 38.2 : 오른쪽 61.8, 세로도 위에서 38.2% 지점이 기준선
+ *
+ * 움직임은 Apple식 스프링이다 (Timeline.tsx 맨 위 설명).
+ * 스프링 곡선(--ease-*)과 멈추는 시간(--t-*)은 Timeline.tsx가 스프링 식으로 계산해 넣는다.
+ * 아래 값은 linear()를 못 쓰는 브라우저와 스크립트가 붙기 전에 쓰는 기본값이다.
+ * 위치가 스크롤을 따라가는 것(레일의 점과 채움선, 배경 연도)은 Timeline.tsx가 매 프레임 정한다.
+ */
+.tl {
+  --phi: 1.618;
+
+  --ease-smooth: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-snappy: cubic-bezier(0.25, 1, 0.5, 1);
+  --t-quick: 180ms;
+  --t-smooth: 320ms;
+  --t-snappy: 300ms;
+
+  --fs-0: 16px;
+  --fs-1: 26px;
+  --fs-2: 42px;
+  --fs-3: 68px;
+  --fs-4: 110px;
+
+  --sp-1: 8px;
+  --sp-2: 13px;
+  --sp-3: 21px;
+  --sp-4: 34px;
+  --sp-5: 55px;
+  --sp-6: 89px;
+
+  /* 고정된 사이트 헤더의 높이. 실제 값은 Timeline.tsx가 잰다 */
+  --tl-top: 57px;
+  --tl-view: calc(100vh - var(--tl-top));
+
+  position: relative;
+  /* .site-main의 위아래 여백을 없애 한 화면이 한 해가 되게 한다 */
+  margin: -2.5rem 0 -5rem;
+  line-height: var(--phi);
+}
+
+/* 동작 줄이기: 튕김을 없앤다. 길이는 그대로 두어 평소 흐름과 이어진다 */
+.tl.reduced {
+  --ease-snappy: var(--ease-smooth);
+  --t-snappy: var(--t-smooth);
+}
+
+/* 넓은 화면에서 해마다 가까이 오면 붙는다. 연도 버튼으로 이동하는 동안에는 뗀다 */
+@media (min-width: 801px) {
+  :root.tl-snap {
+    scroll-snap-type: y proximity;
+  }
+
+  :root.tl-snap.tl-jumping {
+    scroll-snap-type: none;
+  }
+}
+
+.tl-intro,
+.tl-panel,
+.tl-outro {
+  scroll-snap-align: start;
+  scroll-margin-top: var(--tl-top);
+}
+
+.tl-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.tl button {
+  font-family: inherit;
+}
+
+.tl svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* 동작 줄이기에서 연도 버튼을 누르면 화면을 잠깐 흐렸다가 그해에서 다시 밝힌다 */
+.tl.ready .tl-intro,
+.tl.ready .tl-grid,
+.tl.ready .tl-outro {
+  transition: opacity var(--t-smooth) var(--ease-smooth);
+}
+
+.tl.veiled .tl-intro,
+.tl.veiled .tl-grid,
+.tl.veiled .tl-outro {
+  opacity: 0;
+}
+
+/* 도구 버튼 */
+.tl-tools {
+  position: fixed;
+  right: var(--sp-3);
+  bottom: var(--sp-3);
+  z-index: 8;
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+.tl-tool {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  height: 44px;
+  padding: 0 var(--sp-3);
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background-color var(--t-quick) var(--ease-smooth),
+    color var(--t-quick) var(--ease-smooth);
+}
+
+.tl-tool svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.5;
+}
+
+.tl-tool:hover {
+  background: var(--chip-bg);
+}
+
+.tl-tool[aria-pressed="true"] {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.tl-draw-toggle {
+  display: none;
+}
+
+.tl-draw-toggle + .tl-tool {
+  border-left: 1px solid var(--border);
+}
+
+/* 인트로와 아웃트로: 각각 하나의 멈춤 지점 */
+.tl-intro,
+.tl-outro {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-content: center;
+  min-height: var(--tl-view);
+}
+
+.tl-intro .tl-summary {
+  margin: 0 0 var(--sp-3);
+  color: var(--text-muted);
+  font: 500 12px var(--font-mono);
+}
+
+.tl-intro h1 {
+  margin: 0 0 var(--sp-3);
+  font-size: clamp(30px, 4vw, var(--fs-3));
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.tl-intro p {
+  max-width: 560px;
+  margin: 0 0 var(--sp-1);
+  color: var(--text-muted);
+  font-size: var(--fs-0);
+}
+
+.tl-intro .tl-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  max-width: none;
+  margin-top: var(--sp-5);
+  font-size: 13px;
+}
+
+.tl-hint i {
+  display: inline-block;
+  flex: none;
+  width: 1px;
+  height: 32px;
+  background: var(--text);
+  transform-origin: top;
+  animation: tl-drop 1.8s ease-in-out infinite;
+}
+
+@keyframes tl-drop {
+  0% {
+    transform: scaleY(0);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+}
+
+/* 동작 줄이기: 늘었다 줄었다 하는 대신 밝아졌다 흐려진다 */
+@keyframes tl-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.tl.reduced .tl-hint i {
+  animation-name: tl-pulse;
+}
+
+/* 스크립트가 붙기 전에도 시스템의 "동작 줄이기"를 따른다 */
+@media (prefers-reduced-motion: reduce) {
+  .tl-hint i {
+    animation-name: tl-pulse;
+  }
+}
+
+.tl-outro p {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-1);
+  font-weight: 600;
+}
+
+.tl-outro nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-3);
+}
+
+.tl-outro a {
+  border-bottom: 1px solid var(--line);
+  color: var(--text-muted);
+  transition:
+    color var(--t-quick) var(--ease-smooth),
+    border-color var(--t-quick) var(--ease-smooth);
+}
+
+.tl-outro a:hover {
+  border-color: var(--text);
+  color: var(--text);
+  text-decoration: none;
+}
+
+/* 두 칸: 왼쪽은 따라오는 소개와 레일, 오른쪽은 해마다의 기록.
+   fr을 쓰는 이유: 38.2% + 61.8%에 column-gap을 더하면 폭을 넘어 가로 스크롤이 생긴다 */
+.tl-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 0.382fr) minmax(0, 0.618fr);
+  column-gap: var(--sp-5);
+}
+
+.tl-left {
+  position: sticky;
+  top: var(--tl-top);
+  z-index: 2;
+  align-self: start;
+  min-width: 0;
+  height: var(--tl-view);
+}
+
+.tl-left-inner {
+  display: grid;
+  grid-template-rows: 38.2% 61.8%;
+  height: 100%;
+}
+
+.tl-who {
+  align-self: center;
+}
+
+.tl-name {
+  font-size: var(--fs-1);
+  font-weight: 700;
+}
+
+.tl-handle {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.tl-short {
+  max-width: 320px;
+  margin: var(--sp-3) 0 0;
+  color: var(--text-muted);
+  font-size: 14.5px;
+}
+
+.tl-now {
+  align-self: start;
+  padding-top: var(--sp-2);
+}
+
+/* 연도 숫자: 자리마다 0–9가 세로로 이어진 릴이 한 줄 높이의 창 안에서 돈다 */
+.tl-year {
+  display: flex;
+  height: 1.08em;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--fs-3);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+}
+
+.tl-reel-col {
+  display: block;
+  height: 1.08em;
+  overflow: hidden;
+}
+
+.tl-reel {
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+
+.tl-reel span {
+  display: block;
+  height: 1.08em;
+}
+
+/* 해마다의 한 줄: 한자리에 겹쳐 두고 지금 해만 보인다 */
+.tl-themes {
+  display: grid;
+  min-height: 1.6em;
+  margin-top: var(--sp-3);
+}
+
+.tl-theme {
+  grid-area: 1 / 1;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 15px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--t-smooth) var(--ease-smooth),
+    transform var(--t-smooth) var(--ease-smooth);
+}
+
+.tl-theme.on {
+  opacity: 1;
+  transform: none;
+}
+
+.tl-counter {
+  display: inline-block;
+  margin-top: var(--sp-3);
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-muted);
+  font: 500 12px var(--font-mono);
+}
+
+.tl-counter-done {
+  display: block;
+  margin-top: 3px;
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+/* 레일: 점과 채움선은 스크롤 위치(--p)를 그대로 따라간다 */
+.tl-rail {
+  --p: 0%;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tl-rail .track,
+.tl-rail .fill,
+.tl-rail .dot {
+  position: absolute;
+  pointer-events: none;
+}
+
+.tl-rail .track {
+  background: var(--border);
+}
+
+.tl-rail .fill {
+  background: var(--text-muted);
+}
+
+.tl-rail .dot {
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 3px var(--bg);
+}
+
+.tl-rail .tick {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: 500 12px var(--font-mono);
+  cursor: pointer;
+  transition: color var(--t-quick) var(--ease-smooth);
+}
+
+.tl-rail .tick-mark {
+  display: block;
+  background: var(--border);
+  transition: background-color var(--t-quick) var(--ease-smooth);
+}
+
+.tl-rail .tick.past .tick-mark {
+  background: var(--text-muted);
+}
+
+.tl-rail .tick.on,
+.tl-rail .tick:hover {
+  color: var(--text);
+}
+
+.tl-rail .tick.on {
+  font-weight: 700;
+}
+
+/* 넓은 화면: 두 칸 사이 38.2% 분할선 위에 세로로 뒤에 깔린다 */
+.tl-rail-v {
+  position: absolute;
+  top: var(--sp-6);
+  bottom: var(--sp-5);
+  left: calc(100% + var(--sp-5) / 2);
+  width: 0;
+}
+
+.tl-rail-v .track,
+.tl-rail-v .fill {
+  top: 0;
+  left: 0;
+  width: 1px;
+}
+
+.tl-rail-v .track {
+  bottom: 0;
+}
+
+.tl-rail-v .fill {
+  height: var(--p);
+}
+
+.tl-rail-v .dot {
+  top: var(--p);
+  left: -4px;
+  width: 9px;
+  height: 9px;
+  margin-top: -4.5px;
+}
+
+.tl-rail-v .tick {
+  top: var(--at);
+  right: -12px;
+  gap: var(--sp-1);
+  height: 44px;
+  padding-left: var(--sp-1);
+  transform: translateY(-50%);
+}
+
+.tl-rail-v .tick-mark {
+  width: 24px;
+  height: 1px;
+}
+
+/* 좁은 화면: 기록 위에 가로로 놓인다 */
+.tl-rail-h {
+  position: relative;
+  display: none;
+  height: 56px;
+  margin: 0 22px var(--sp-4);
+}
+
+.tl-rail-h .track,
+.tl-rail-h .fill {
+  top: 35px;
+  left: 0;
+  height: 1px;
+}
+
+.tl-rail-h .track {
+  right: 0;
+}
+
+.tl-rail-h .fill {
+  width: var(--p);
+}
+
+.tl-rail-h .dot {
+  top: 31px;
+  left: var(--p);
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+}
+
+.tl-rail-h .tick {
+  top: 0;
+  left: var(--at);
+  flex-direction: column;
+  gap: 6px;
+  width: 44px;
+  height: 56px;
+  transform: translateX(-50%);
+}
+
+.tl-rail-h .tick-mark {
+  width: 1px;
+  height: 13px;
+}
+
+/* 좁은 화면의 상단 바 아래에 붙는 진행선 */
+.tl-bar-progress {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  display: none;
+  height: 2px;
+  background: var(--text);
+  pointer-events: none;
+}
+
+.tl-right {
+  position: relative;
+  min-width: 0;
+}
+
+/* 배경의 큰 연도: 화면에 붙은 한 층에서 해마다 교차 페이드하며 떠오른다 */
+.tl-watermark {
+  position: sticky;
+  top: var(--tl-top);
+  z-index: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.tl-watermark-inner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--tl-view);
+}
+
+.tl-big {
+  position: absolute;
+  bottom: var(--sp-4);
+  left: 0;
+  color: color-mix(in srgb, var(--text) 5%, transparent);
+  font-size: var(--fs-4);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  user-select: none;
+  will-change: opacity, transform;
+}
+
+/* 해마다의 기록 */
+.tl-panel {
+  position: relative;
+  min-height: var(--tl-view);
+  padding: calc(var(--tl-view) * 0.382 - var(--sp-5)) 0 var(--sp-6);
+}
+
+.tl-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+.tl-caption {
+  margin: 0;
+  color: var(--text-muted);
+  font: 500 12px var(--font-mono);
+}
+
+.tl-paper {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--sp-2);
+}
+
+/* 카드는 그 해가 화면에 들어올 때 차례로 나타난다. 스크립트가 없으면 처음부터 보인다 */
+.tl.ready .tl-card-wrap {
+  transition:
+    opacity var(--t-smooth) var(--ease-smooth),
+    transform var(--t-smooth) var(--ease-smooth);
+}
+
+.tl.ready .tl-card-wrap:not(.in) {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.tl .note {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--sp-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  transition:
+    background-color var(--t-quick) var(--ease-smooth),
+    border-color var(--t-quick) var(--ease-smooth);
+}
+
+.tl .note.link:hover,
+.tl .note.link:focus-visible {
+  border-color: var(--line);
+  background: var(--chip-bg);
+  text-decoration: none;
+}
+
+.tl .note-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  color: var(--text-muted);
+  font: 500 10px var(--font-mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tl .note-head .kind {
+  flex: 1;
+}
+
+.tl .note-head .stamp {
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.tl .note-head .go {
+  width: 12px;
+  height: 12px;
+  stroke-width: 1.5;
+  transition: transform var(--t-quick) var(--ease-smooth);
+}
+
+.tl .note.link:hover .go {
+  transform: translate(2px, -2px);
+}
+
+.tl .note b {
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.tl .note .desc,
+.tl .note .note-more-text {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* 링크 카드에 올리면 조금 더 긴 설명이 아래로 펼쳐진다 */
+.tl .note .note-more {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--t-snappy) var(--ease-snappy),
+    opacity var(--t-snappy) var(--ease-snappy);
+}
+
+.tl .note .note-more > span {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tl .note .note-more-text {
+  display: block;
+  margin-top: var(--sp-1);
+  padding-top: var(--sp-1);
+  border-top: 1px solid var(--border);
+}
+
+.tl .note.link:focus-visible .note-more {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .tl .note.link:hover .note-more {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+}
+
+/* 숨은 이야기 */
+.tl-mark {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+  opacity: 0.55;
+  transition:
+    opacity var(--t-quick) var(--ease-smooth),
+    transform var(--t-quick) var(--ease-smooth);
+}
+
+.tl-mark svg {
+  width: 21px;
+  height: 21px;
+  overflow: visible;
+  stroke-width: 1.15;
+}
+
+.tl-mark circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+.tl-mark.found::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text);
+}
+
+.tl-secret {
+  position: fixed;
+  z-index: 20;
+  width: 280px;
+  max-width: calc(100vw - 28px);
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgb(28 29 26 / 0.12);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px) scale(0.98);
+  transition:
+    opacity var(--t-snappy) var(--ease-snappy),
+    transform var(--t-snappy) var(--ease-snappy);
+}
+
+:root[data-theme="dark"] .tl-secret {
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .tl-secret {
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+  }
+}
+
+.tl-secret.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+.tl-secret p {
+  margin: 0;
+  padding-right: var(--sp-3);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.tl-secret button {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.tl-secret button svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.5;
+}
+
+/* 동작 줄이기: 위치 이동을 빼고 페이드만 남긴다 */
+.tl.reduced .tl-theme,
+.tl.reduced.ready .tl-card-wrap:not(.in),
+.tl.reduced .tl-secret,
+.tl.reduced .note.link:hover .go,
+.tl.reduced.ready .tl-mark:hover,
+.tl.reduced.ready .tl-mark:focus-visible {
+  transform: none;
+}
+
+/* 넓은 화면: 숨은 이야기 표시는 종이의 빈칸에 떠 있고, 커서가 가까워질수록 또렷해진다 */
+@media (min-width: 801px) {
+  .tl-mark {
+    position: absolute;
+    top: var(--spot-top);
+    right: var(--spot-right);
+    left: var(--spot-left);
+    z-index: 3;
+  }
+
+  .tl.ready .tl-mark {
+    opacity: var(--reveal, 0.1);
+  }
+
+  .tl.ready .tl-mark.found {
+    opacity: 0.32;
+  }
+
+  .tl.ready .tl-mark:hover,
+  .tl.ready .tl-mark:focus-visible {
+    opacity: 0.85;
+    transform: scale(1.08);
+  }
+}
+
+@media (min-width: 801px) and (hover: none) {
+  .tl.ready .tl-mark {
+    opacity: max(var(--reveal, 0.1), 0.3);
+  }
+}
+
+/* 좁은 화면: 왼쪽 칸은 한 줄짜리 상단 바, 레일은 가로, 기록은 한 줄 목록 */
+@media (max-width: 800px) {
+  .tl-draw-toggle {
+    display: flex;
+  }
+
+  .tl-tools {
+    bottom: calc(var(--sp-3) + 8px);
+  }
+
+  .tl-intro,
+  .tl-outro {
+    min-height: 70vh;
+  }
+
+  .tl-grid {
+    display: block;
+  }
+
+  .tl-left {
+    z-index: 6;
+    height: auto;
+    margin: 0 -24px;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .tl-left-inner {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    height: auto;
+    padding: var(--sp-2) 0;
+  }
+
+  .tl-who {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .tl-name {
+    font-size: 20px;
+    white-space: nowrap;
+  }
+
+  .tl-short,
+  .tl-themes {
+    display: none;
+  }
+
+  .tl-now {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-left: auto;
+    padding: 0;
+  }
+
+  .tl-year {
+    font-size: var(--fs-2);
+  }
+
+  .tl-counter {
+    margin-top: 0;
+    white-space: nowrap;
+  }
+
+  /* 상단 바에는 개수만 보인다. 이름표는 화면 읽기 프로그램에만 남긴다 */
+  .tl-counter-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .tl-counter-done {
+    display: none;
+  }
+
+  .tl-rail-v,
+  .tl-watermark {
+    display: none;
+  }
+
+  .tl-rail-h,
+  .tl-bar-progress {
+    display: block;
+  }
+
+  .tl-right {
+    margin-top: var(--sp-3);
+  }
+
+  .tl-panel {
+    min-height: 0;
+    padding: 0 0 var(--sp-4);
+  }
+
+  .tl-paper {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tl .note .note-more {
+    display: none;
+  }
+}
+
+/* 아주 좁은 화면: 상단 바가 넘치지 않도록 아이디를 뺀다 */
+@media (max-width: 480px) {
+  .tl-handle {
+    display: none;
+  }
+}

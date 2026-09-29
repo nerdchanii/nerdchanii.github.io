@@ -15,6 +15,7 @@ import { rehypeStaticHtml } from "./build/rehype/static-html.ts"
 import { rehypeToc } from "./build/rehype/toc.ts"
 import { remarkObsidian } from "./build/remark/obsidian.ts"
 import { createResolver, type Resolver } from "./build/resolve.ts"
+import { timelinePlugin } from "./build/timeline.ts"
 
 // 링크·이미지 조회용 인덱스. 글이 바뀌면 다시 만든다.
 let resolver: Resolver | undefined
@@ -28,6 +29,7 @@ export default defineConfig({
   },
   plugins: [
     contentPlugin({ onChange: () => (resolver = undefined) }),
+    timelinePlugin(),
     {
       // Obsidian 주석을 지우고, 표 안 위키링크의 `|`가 GFM 열 구분자로 읽히지 않게 MDX 전에 맞춘다.
       name: "obsidian-preprocess",

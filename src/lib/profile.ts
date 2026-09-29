@@ -444,3 +444,70 @@ export const ABOUT_INTRO: Text[] = [
     en: "When I hit a bug, I follow it past the symptom to the cause, and try to give it back as a reproducer, an issue, or a PR.",
   },
 ]
+
+/** 홈(타임라인)의 문구 */
+export const HOME: {
+  hello: Text
+  intro: Text[]
+  /** {from} {to} {years} {items}을 채운다 */
+  summary: Text
+  hint: Text
+  short: Text[]
+  /** {n}을 채운다 */
+  records: Text
+  railLabel: Text
+  counter: Text
+  allFound: Text
+  outro: Text
+  outroLinks: { label: Text; href: string }[]
+  draw: Text
+  erase: Text
+  secretFound: Text
+  secretHidden: Text
+  close: Text
+} = {
+  hello: { ko: "안녕하세요, 김예찬입니다.", en: "Hello, I'm Yechan Kim." },
+  intro: [
+    {
+      ko: "AI 에이전트에게 일을 맡길 때 무엇을 맡기고 무엇을 사람에게 물어야 하는지 고민하고, 그걸 돕는 도구를 만들고 있습니다.",
+      en: "I think about what to hand to an AI agent and what it should ask a person, and I build tools that help with that.",
+    },
+    {
+      ko: "이곳은 그 과정에서 배우고 부딪힌 것들을 정리해두는 기록장입니다.",
+      en: "This is where I write down what I learn and run into along the way.",
+    },
+  ],
+  summary: {
+    ko: "{from} – {to} · {years}개의 해 · 기록 {items}개",
+    en: "{from} – {to} · {years} years · {items} records",
+  },
+  hint: {
+    ko: "스크롤하면 한 해씩 흘러갑니다. 연도를 누르면 그해로 바로 가고, 빈 종이는 눌러서 그려볼 수 있어요.",
+    en: "Scroll and the years flow by. Press a year to go straight to it, or press on the empty paper to draw.",
+  },
+  short: [
+    {
+      ko: "무엇을 맡기고 무엇을 물어야 할지 고민하며 도구를 만듭니다.",
+      en: "I build tools around what to delegate and what to ask.",
+    },
+    { ko: "이곳은 그 기록입니다.", en: "This is the record." },
+  ],
+  records: { ko: "기록 {n}개", en: "{n} records" },
+  railLabel: { ko: "연도로 이동", en: "Go to year" },
+  counter: { ko: "찾은 이야기", en: "Stories found" },
+  allFound: {
+    ko: "다 찾으셨네요. 끝까지 봐 주셔서 고맙습니다.",
+    en: "You found them all. Thank you for looking this closely.",
+  },
+  outro: { ko: "여기까지가 지금의 기록입니다.", en: "That is the record so far." },
+  outroLinks: [
+    { label: { ko: "전체 글", en: "All posts" }, href: "/blog" },
+    { label: { ko: "Work", en: "Work" }, href: "/work" },
+    { label: { ko: "GitHub", en: "GitHub" }, href: "https://github.com/nerdchanii" },
+  ],
+  draw: { ko: "그리기", en: "Draw" },
+  erase: { ko: "지우개", en: "Erase" },
+  secretFound: { ko: "년의 숨은 이야기 (발견함)", en: ": hidden story (found)" },
+  secretHidden: { ko: "년의 숨은 이야기", en: ": hidden story" },
+  close: { ko: "닫기", en: "Close" },
+}

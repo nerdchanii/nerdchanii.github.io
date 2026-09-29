@@ -29,3 +29,27 @@ declare module "virtual:content" {
 
   export const entries: Entry[]
 }
+
+declare module "virtual:timeline" {
+  type ItemText = { kind: string; title: string; desc?: string; preview?: string }
+
+  export type TimelineItem = ItemText & {
+    href?: string
+    /** 글에서 온 항목이면 true */
+    post?: boolean
+    /** 글 날짜 (YYYY-MM-DD). 사건 항목에는 없다 */
+    date?: string
+    /** 영어 홈에서 바꿔 보여줄 값 */
+    en?: Partial<ItemText>
+  }
+
+  export type TimelineYear = {
+    year: number
+    theme: string
+    secret?: string
+    en?: { theme?: string; secret?: string }
+    items: TimelineItem[]
+  }
+
+  export const years: TimelineYear[]
+}

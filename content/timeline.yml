@@ -1,0 +1,191 @@
+# 홈의 연도별 타임라인.
+#
+# - 여기에는 글이 아닌 사건(학교, 프로젝트, 기여)을 적는다.
+# - devlog, projects 글은 frontmatter 날짜를 보고 자동으로 그 해에 들어간다.
+#   다른 글도 넣으려면 frontmatter에 `timeline: true`, 빼려면 `timeline: false`.
+#   글의 제목·설명을 바꾸려면 `timeline: { title: …, desc: …, kind: … }`.
+#
+# 항목 필드
+#   kind     작은 분류 이름 (학교, 프로젝트, 오픈소스 …)
+#   title    제목
+#   desc     한 줄 설명
+#   href     누르면 갈 곳 (선택)
+#   preview  마우스를 올리면 보여줄 조금 더 긴 설명 (선택)
+#   en       영어 홈(/en)에서 바꿔 보여줄 값. kind, title, desc, preview 중 필요한 것만 (선택)
+# 연도 필드
+#   theme    그 해를 한 줄로
+#   secret   찾아낸 사람만 보는 짧은 이야기 (선택)
+#   en       영어 홈(/en)에서 바꿔 보여줄 theme, secret (선택)
+
+years:
+  - year: 2020
+    theme: 컴퓨터과학을 시작한 해
+    en:
+      theme: The year I started computer science
+    items:
+      - kind: 학교
+        title: 한국방송통신대학교 컴퓨터과학과
+        desc: 2020년 9월부터 2023년 2월까지.
+        en:
+          kind: School
+          title: Korea National Open University, Computer Science
+          desc: September 2020 to February 2023.
+
+  - year: 2021
+    theme: GitHub에 기록을 남기기 시작한 해
+    en:
+      theme: The year I started leaving a record on GitHub
+    items:
+      - kind: 시작
+        title: 첫 GitHub 프로필
+        desc: 작은 설정 파일과 연습 저장소부터.
+        href: https://github.com/nerdchanii
+        en:
+          kind: Start
+          title: First GitHub profile
+          desc: Starting with small config files and practice repositories.
+
+  - year: 2022
+    theme: 처음으로 남이 쓰는 것을 만들어 본 해
+    secret: 코드스파링은 개발이 재미있기를 바라는 마음으로 만든 첫 토이 프로젝트였습니다.
+    en:
+      theme: The year I first built something other people used
+      secret: CodeSparring was my first toy project. I made it hoping development could be fun.
+    items:
+      - kind: 프로젝트
+        title: 코드스파링
+        desc: 실시간으로 함께 코딩 테스트를 푸는 첫 토이 프로젝트.
+        href: https://github.com/nerdchanii/codesparring-client
+        preview: 혼자 준비하는 코딩 테스트가 지루하지 않도록, 다른 사람과 실시간으로 같은 문제를 푸는 서비스를 만들었습니다.
+        en:
+          kind: Project
+          title: CodeSparring
+          desc: "My first toy project: solving coding tests together in real time."
+          preview: I built a service where people solve the same problem together in real time, so preparing for coding tests alone would be less dull.
+      - kind: 라이브러리
+        title: socket-store
+        desc: React에서 WebSocket 상태를 다루는 작은 라이브러리.
+        href: https://github.com/nerdchanii/react-socket-store
+        preview: 프레임워크와 무관한 코어(socket-store)와 React 어댑터(react-socket-store)로 나눠 npm에 배포했습니다.
+        en:
+          kind: Library
+          desc: A small library for handling WebSocket state in React.
+          preview: Published to npm as a framework-independent core (socket-store) and a React adapter (react-socket-store).
+
+  - year: 2023
+    theme: 바닥부터 만들어 보기로 한 해
+    secret: 라피신 동안 클러스터 출입 기록 기준으로 약 420시간을 보냈습니다.
+    en:
+      theme: The year I decided to build from the ground up
+      secret: During the Piscine I spent about 420 hours in the cluster, going by the entry logs.
+    items:
+      - kind: 프로젝트
+        title: RPM
+        desc: Rust로 만드는 Node 패키지 매니저. 지금도 이어지고 있습니다.
+        href: https://github.com/nerdchanii/rpm
+        preview: 설치, 의존성 해석, 스크립트 실행을 Rust로 하나씩 구현하면서, 동작을 스펙 문서로 먼저 고정하는 방식을 실험하고 있습니다.
+        en:
+          kind: Project
+          desc: A Node package manager written in Rust. Still ongoing.
+          preview: I implement install, dependency resolution and script execution in Rust one at a time, and experiment with fixing the behavior in a spec document first.
+      - kind: 졸업
+        title: 방송대 컴퓨터과학과 졸업
+        desc: 2월.
+        en:
+          kind: Graduation
+          title: Graduated from KNOU Computer Science
+          desc: February.
+      - kind: 42서울
+        title: 10기 입과
+        desc: 10월. 라피신에서 동료평가 100회.
+        href: /projects/42-SEOUL
+        en:
+          kind: 42 Seoul
+          title: Joined the 10th cohort
+          desc: October. 100 peer evaluations during the Piscine.
+
+  - year: 2024
+    theme: C로 운영체제 가까이 내려간 해
+    secret: 동료평가를 하면서, 설명하지 못하면 아직 모르는 것이라는 걸 배웠습니다.
+    en:
+      theme: The year I went down close to the operating system in C
+      secret: Doing peer evaluations taught me that if I cannot explain it, I do not know it yet.
+    items:
+      - kind: 42서울
+        title: minishell
+        desc: bash처럼 동작하는 셸. 둘이 나눠 만들었고, 저는 실행부를 맡았습니다.
+        href: https://github.com/nerdchanii/minishell
+        preview: 파서가 넘긴 명령을 받아 fork·exec, 파이프, 리다이렉션, 시그널을 처리했습니다. heredoc 입력을 읽는 부분과 종료 상태 계산도 맡았습니다.
+        en:
+          kind: 42 Seoul
+          desc: A shell that behaves like bash, built by two of us. I wrote the executor.
+          preview: I took the commands the parser handed over and handled fork and exec, pipes, redirections and signals. I also wrote the heredoc input and the exit status handling.
+      - kind: 42서울
+        title: cub3D
+        desc: 레이캐스팅으로 그리는 3D 미로.
+        en:
+          kind: 42 Seoul
+          desc: A 3D maze drawn with raycasting.
+      - kind: 42서울
+        title: ircserv
+        desc: C++로 만든 IRC 서버. 2025년 초까지.
+        href: https://github.com/ircserv/ircserv
+        en:
+          kind: 42 Seoul
+          desc: An IRC server in C++. Until early 2025.
+
+  - year: 2025
+    theme: AI로 방향을 튼 해
+    secret: 《디버깅팀》을 읽으며, 내가 통제할 수 있는 변수는 나라는 문장을 적어 두었습니다.
+    en:
+      theme: The year I turned toward AI
+      secret: "Reading Debugging Teams, I wrote down one line: the variable I can control is me."
+    items:
+      - kind: 42서울
+        title: ft_transcendence
+        desc: 팀으로 만든 멀티플레이 웹 게임.
+        en:
+          kind: 42 Seoul
+          desc: A multiplayer web game built as a team.
+      - kind: 부스트캠프
+        title: AI Tech 8기 NLP
+        desc: 9월 시작. MRC와 ODQA부터.
+        en:
+          kind: Boostcamp
+          title: AI Tech 8th cohort, NLP
+          desc: Started in September, with MRC and ODQA.
+      - kind: 노트
+        title: 수학 정리와 읽기 노트
+        desc: 미분, 고유값 분해, PCA, 《디버깅팀》.
+        href: /notes
+        en:
+          kind: Notes
+          title: Math and reading notes
+          desc: Derivatives, eigendecomposition, PCA, Debugging Teams.
+
+  - year: 2026
+    theme: 에이전트와 원인 추적의 해
+    secret: 이 홈페이지는 Vite와 Solid로 직접 만든 정적 사이트 위에서 돌아갑니다.
+    en:
+      theme: The year of agents and root causes
+      secret: This site runs on a static site I built myself with Vite and Solid.
+    items:
+      - kind: 부스트캠프
+        title: MIT
+        desc: 회의 기록을 다루는 에이전트. 에이전트 파트를 맡았습니다.
+        href: https://github.com/boostcampaitech8/pro-nlp-finalproject-nlp-14
+        preview: 데이터를 바꾸는 도구 호출에만 사람의 승인을 두고, 매번 시간을 묻던 툴 호출은 시스템 프롬프트에 현재 시각을 넣어 없앴습니다.
+        en:
+          kind: Boostcamp
+          desc: An agent that works with meeting records. I owned the agent part.
+          preview: Human approval is required only for tool calls that change data. The tool call that asked for the time on every turn was removed by putting the current time in the system prompt.
+      - kind: 오픈소스
+        title: SolidJS PR 5개 병합
+        desc: solid-cli와 templates.
+        href: https://github.com/solidjs/templates/pull/271
+        preview: 동시 SSR 요청 사이에 라우터 상태가 새는 문제를 재현 저장소로 보이고, 요청마다 라우터를 만드는 수정이 병합됐습니다.
+        en:
+          kind: Open source
+          title: 5 SolidJS PRs merged
+          desc: solid-cli and templates.
+          preview: I showed with a reproduction repository that router state leaked between concurrent SSR requests, and the fix that creates a router per request was merged.
