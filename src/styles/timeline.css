@@ -718,10 +718,10 @@
     border-color var(--t-quick) var(--ease-smooth);
 }
 
+/* 올리면 회색으로 채우지 않고, 테두리 선만 먹색으로 긋는다 (아웃트로 링크와 같은 톤) */
 .tl .note.link:hover,
 .tl .note.link:focus-visible {
-  border-color: var(--line);
-  background: var(--chip-bg);
+  border-color: var(--text);
   text-decoration: none;
 }
 
