@@ -52,21 +52,10 @@
   --t-snappy: var(--t-smooth);
 }
 
-/* 넓은 화면에서 해마다 가까이 오면 붙는다. 연도 버튼으로 이동하는 동안에는 뗀다 */
-@media (min-width: 801px) {
-  :root.tl-snap {
-    scroll-snap-type: y proximity;
-  }
-
-  :root.tl-snap.tl-jumping {
-    scroll-snap-type: none;
-  }
-}
-
+/* 스크롤은 붙지 않는다. 해마다 한 화면이라 붙는 범위가 화면 대부분을 덮어, 조금 내려 읽으려 해도 되돌아갔다 */
 .tl-intro,
 .tl-panel,
 .tl-outro {
-  scroll-snap-align: start;
   scroll-margin-top: var(--tl-top);
 }
 
@@ -94,7 +83,7 @@
   opacity: 0;
 }
 
-/* 인트로와 아웃트로: 각각 하나의 멈춤 지점 */
+/* 인트로와 아웃트로 */
 .tl-intro,
 .tl-outro {
   position: relative;
@@ -102,6 +91,13 @@
   display: grid;
   align-content: center;
   min-height: var(--tl-view);
+}
+
+/* 인트로는 위의 방 그림에 바로 이어진다. 아래 여백은 흘러내리는 선(.tl-hint)이 앉을 자리다 */
+.tl-intro {
+  align-content: start;
+  min-height: 0;
+  padding: var(--sp-5) 0 calc(var(--sp-6) + var(--sp-5));
 }
 
 .tl-intro .tl-summary {
@@ -980,7 +976,6 @@
 
 /* 좁은 화면: 왼쪽 칸은 한 줄짜리 상단 바, 레일은 가로, 기록은 한 줄 목록 */
 @media (max-width: 800px) {
-  .tl-intro,
   .tl-outro {
     min-height: 70vh;
   }

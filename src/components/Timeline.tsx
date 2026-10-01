@@ -13,7 +13,7 @@ import "../styles/timeline.css"
  *
  * 움직임은 Apple의 규칙을 따른다 (HIG Motion, WWDC23 「Animate with springs」).
  * - 모든 움직임은 스프링이다. 길이(duration)와 튕김(bounce) 두 값으로 정하고, 모르겠으면 튕김 0.
- * - 스크롤은 브라우저가 한다. 가로채지 않고, 해마다 가까이 왔을 때만 붙는다 (scroll-snap proximity).
+ * - 스크롤은 브라우저가 한다. 가로채지도, 해마다 붙이지도 않는다.
  * - 레일과 배경의 큰 연도는 스크롤 위치를 그대로 따라간다.
  * - 연도 버튼으로 이동하는 중에 다른 해를 누르면 그때의 속도를 이어받아 방향을 바꾼다.
  * - 동작 줄이기에서는 튕김과 이동을 빼고, 같은 길이의 페이드만 남긴다.
@@ -211,7 +211,6 @@ export default function Timeline(props: { lang: Lang }) {
     // 시스템의 동작 줄이기를 따른다. `data-motion="full"`(개발 중 확인용)이면 움직인다 (lib/flight.ts)
     const reducedMotion = !forced && motionReduced()
     const isMobile = () => matchMedia(MOBILE).matches
-    const html = document.documentElement
     const header = document.querySelector<HTMLElement>(".site-header")
     const topOffset = () => header?.offsetHeight ?? 0
     const panels = [...root.querySelectorAll<HTMLElement>(".tl-panel")]
@@ -254,10 +253,6 @@ export default function Timeline(props: { lang: Lang }) {
 
     const measure = () => root.style.setProperty("--tl-top", topOffset() + "px")
     measure()
-
-    // 넓은 화면에서만 해마다 가까이 오면 붙는다. 다른 페이지로 가면 뗀다
-    html.classList.add("tl-snap")
-    onCleanup(() => html.classList.remove("tl-snap", "tl-jumping"))
 
     // ---- 연도 릴: 슬롯머신처럼 모든 자리가 함께 돌다가 왼쪽 자리부터 하나씩 멈춘다 ----
     // 앞으로 가면 숫자가 아래에서 올라오고, 뒤로 가면 위에서 내려온다.
@@ -374,7 +369,6 @@ export default function Timeline(props: { lang: Lang }) {
       jumpRaf = 0
       veilTimer = 0
       target = -1
-      html.classList.remove("tl-jumping")
       setVeiled(false)
       queueDetect()
     }
@@ -410,8 +404,6 @@ export default function Timeline(props: { lang: Lang }) {
         target = -1
         return
       }
-      // 브라우저는 스크립트가 옮긴 스크롤에도 스냅을 건다. 가는 동안에는 떼어 곡선이 끊기지 않게 한다
-      html.classList.add("tl-jumping")
       const stiffness = Math.pow((2 * Math.PI) / JUMP_D, 2)
       const damping = (4 * Math.PI) / JUMP_D
       let last = performance.now()

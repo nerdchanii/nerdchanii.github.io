@@ -7,9 +7,11 @@
 const SHAPES = "path, line, rect, circle, ellipse, polyline"
 /** 선 하나가 앞 선보다 늦게 시작하는 시간 (s) */
 const STEP = 0.03
+/** 도형이 많아도 마지막 선은 이때까지 긋기 시작한다 (s). 그림이 커질수록 간격을 좁힌다 */
+const BUDGET = 1.2
 
 export function arm(root: Element) {
-  let i = 0
+  const lines: SVGElement[] = []
   for (const el of root.querySelectorAll<SVGElement>(SHAPES)) {
     if (el.closest("defs, clipPath, [data-nodraw]")) continue
     // 채워진 점(눈, 코)과 그림자는 선이 다 그어진 뒤에 옅게 나타난다
@@ -17,6 +19,11 @@ export function arm(root: Element) {
       el.classList.add("f")
       continue
     }
+    lines.push(el)
+  }
+  const step = Math.min(STEP, BUDGET / Math.max(1, lines.length))
+  let i = 0
+  for (const el of lines) {
     el.setAttribute("pathLength", "1")
     // 그림이 제 크기보다 크게 놓였으면 그 배율만큼 길게 그어야 선이 끝까지 닿는다 (line.css의 --k)
     const m = (el as SVGGraphicsElement).getScreenCTM?.()
@@ -24,12 +31,15 @@ export function arm(root: Element) {
     const k = m ? Math.max(Math.hypot(m.a, m.b), Math.hypot(m.c, m.d)) : 1
     if (k > 1) el.style.setProperty("--k", k.toFixed(3))
     el.classList.add("d")
-    el.style.setProperty("--d", `${(i++ * STEP).toFixed(2)}s`)
+    el.style.setProperty("--d", `${(i++ * step).toFixed(3)}s`)
   }
-  const after = `${(i * STEP + 0.25).toFixed(2)}s`
+  const after = `${(i * step + 0.25).toFixed(2)}s`
   for (const el of root.querySelectorAll<SVGElement>(".f")) {
     if (!el.style.getPropertyValue("--d")) el.style.setProperty("--d", after)
   }
+  // 채운 점이 나타나는 때. 이름표처럼 그림 뒤에 나타날 것도 이 값을 기다린다 (line-room.css)
+  const host = root as HTMLElement
+  host.style.setProperty("--after", after)
   root.classList.add("armed")
 }
 
