@@ -1,0 +1,224 @@
+/*
+ * 선 그림과 그 움직임. 사이트의 그림은 모두 먹색 선으로 그리고, 화면에 들어올 때 선이 그어지며 나타난다.
+ *
+ * - 선: `svg.ln` 안의 도형은 채우지 않고 currentColor 선으로만 그린다.
+ * - 그려짐: lib/draw.ts가 도형마다 pathLength=1과 순서(--d)를 매기고, 화면에 들어오면 `.play`를 붙인다.
+ * - 음영: 빛은 왼쪽 위에서 온다. 그 반대쪽과 아래에만 옅은 그림자(.sh)를 넣고, 면 전체는 칠하지 않는다.
+ * - 동작 줄이기에서는 선을 긋지 않고 같은 길이로 흐려 나타난다. 숨·깜빡임 같은 되풀이 움직임은 끈다.
+ */
+:root {
+  /* 가속했다가 부드럽게 멈춘다. 선을 긋거나 모양을 바꿀 때 */
+  --ease-draw: cubic-bezier(0.7, 0, 0.2, 1);
+  /* 살짝 지나쳤다가 돌아온다. 물건이 톡 올라오거나 떨어져 꽂힐 때 */
+  --ease-pop: cubic-bezier(0.3, 1.6, 0.5, 1);
+  --t-draw: 0.8s;
+  --shade: 0.085;
+}
+
+svg.ln {
+  display: block;
+  overflow: visible;
+  color: var(--text);
+}
+
+svg.ln :is(path, line, rect, circle, ellipse, polyline) {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+svg.ln .thin {
+  stroke-width: 1.3;
+}
+
+svg.ln .soft {
+  stroke-width: 1.2;
+  stroke: var(--text-muted);
+}
+
+svg.ln .faint {
+  stroke: var(--line);
+}
+
+svg.ln .ink {
+  fill: currentColor;
+  stroke: none;
+}
+
+svg.ln .hl {
+  fill: var(--bg);
+  stroke: none;
+}
+
+svg.ln .paper {
+  fill: var(--bg);
+}
+
+svg.ln .sh {
+  fill: currentColor;
+  fill-opacity: var(--shade);
+  stroke: none;
+}
+
+svg.ln text {
+  fill: var(--text-muted);
+  stroke: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+/* 그려지는 선. draw.ts가 준비를 마친 뒤(.armed)에만 숨겨서, 스크립트가 없으면 그림이 그대로 보인다 */
+/*
+ * 선 굵기를 화면 기준으로 두면(non-scaling-stroke) 점선 길이도 화면 기준으로 잰다. 그림이 제 크기보다
+ * 크게 놓이면 길이 1이 선 끝에 못 미치므로, draw.ts가 잰 배율(--k)만큼 늘려 긋는다.
+ */
+.armed .d {
+  stroke-dasharray: var(--k, 1) calc(var(--k, 1) * 2);
+  stroke-dashoffset: var(--k, 1);
+  opacity: 0;
+}
+
+.armed.play .d {
+  animation: ln-draw var(--t-draw) var(--ease-draw) forwards;
+  animation-delay: var(--d, 0s);
+}
+
+.armed .f {
+  opacity: 0;
+}
+
+.armed.play .f {
+  animation: ln-fade 0.4s ease forwards;
+  animation-delay: var(--d, 0s);
+}
+
+@keyframes ln-draw {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: var(--k, 1);
+  }
+  2% {
+    opacity: 1;
+  }
+  0%,
+  99.9% {
+    stroke-dasharray: var(--k, 1) calc(var(--k, 1) * 2);
+  }
+  /* 다 그은 뒤에는 점선을 풀어서, 창 크기가 바뀌어도 선이 끝까지 남는다 */
+  100% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+    stroke-dasharray: none;
+  }
+}
+
+@keyframes ln-fade {
+  to {
+    opacity: 1;
+  }
+}
+
+/* 등장인물의 살아 있는 움직임 */
+.cast .eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cast-blink 4.6s infinite;
+}
+
+.cast .head {
+  transform-origin: 100px 170px;
+  animation: cast-bob 3.6s ease-in-out infinite;
+}
+
+.cast .hand {
+  transform-origin: 44px 204px;
+  animation: cast-wave 0.9s ease-in-out 2s 3;
+}
+
+.cast:hover .hand,
+a:hover .cast .hand,
+a:focus-visible .cast .hand {
+  animation: cast-wave 0.5s ease-in-out infinite;
+}
+
+.cast .typing {
+  animation: cast-type 0.28s ease-in-out infinite alternate;
+}
+
+.cast .tail {
+  transform-origin: 112px 160px;
+  animation: cast-wag 0.45s ease-in-out infinite alternate;
+}
+
+.cast .ear {
+  transform-box: fill-box;
+  transform-origin: bottom center;
+  animation: cast-twitch 5.2s infinite;
+}
+
+@keyframes cast-blink {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes cast-bob {
+  50% {
+    transform: rotate(-1.2deg) translateY(0.6px);
+  }
+}
+
+@keyframes cast-wave {
+  50% {
+    transform: rotate(-13deg);
+  }
+}
+
+@keyframes cast-type {
+  to {
+    transform: translateY(1.6px);
+  }
+}
+
+@keyframes cast-wag {
+  to {
+    transform: rotate(-9deg);
+  }
+}
+
+@keyframes cast-twitch {
+  0%,
+  90%,
+  100% {
+    transform: rotate(0);
+  }
+  94% {
+    transform: rotate(-7deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) .armed.play .d {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    animation: ln-fade 0.4s ease forwards;
+    animation-delay: 0s;
+  }
+
+  :root:not([data-motion="full"]) .armed.play .f {
+    animation-delay: 0s;
+  }
+
+  :root:not([data-motion="full"]) .cast :is(.eyes, .head, .hand, .typing, .tail, .ear) {
+    animation: none !important;
+  }
+}

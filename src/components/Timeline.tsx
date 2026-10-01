@@ -1,9 +1,10 @@
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show } from "solid-js"
 import { years as DATA, type TimelineItem, type TimelineYear } from "virtual:timeline"
+import { draw as drawLines } from "../lib/draw.ts"
+import { reducedMotion as motionReduced } from "../lib/flight.ts"
 import { localize, type Lang } from "../lib/i18n.ts"
 import { HOME } from "../lib/profile.ts"
 import { AUTHOR } from "../lib/site.ts"
-import { THEME_EVENT } from "../lib/theme.ts"
 import SmartLink from "./SmartLink.tsx"
 import "../styles/timeline.css"
 
@@ -16,6 +17,9 @@ import "../styles/timeline.css"
  * - 레일과 배경의 큰 연도는 스크롤 위치를 그대로 따라간다.
  * - 연도 버튼으로 이동하는 중에 다른 해를 누르면 그때의 속도를 이어받아 방향을 바꾼다.
  * - 동작 줄이기에서는 튕김과 이동을 빼고, 같은 길이의 페이드만 남긴다.
+ *
+ * 그 위에 선이 얹힌다 (styles/line.css의 약속). 레일과 눈금은 처음 화면에 들어올 때 한 번 그어지고,
+ * 해마다 머리글 앞의 짧은 선과 숨은 이야기 표시가 그어진 다음에 카드가 나타난다.
  */
 
 type Spring = { d: number; bounce: number }
@@ -33,6 +37,10 @@ const JUMP_D = 0.55
 const VEIL_MS = 280
 /** 카드가 차례로 나타나는 간격 (ms) */
 const STAGGER_MS = 60
+/** 그해의 선이 먼저 그어지도록 카드가 기다리는 시간 (ms) */
+const LINE_LEAD_MS = 240
+/** 레일이 이만큼 화면에 들어오면 긋기 시작한다 */
+const RAIL_SHOWN = 0.3
 /** linear()를 못 쓰는 브라우저가 스프링 대신 쓰는 곡선 */
 const FALLBACK_EASE = "cubic-bezier(0.25, 1, 0.5, 1)"
 
@@ -43,8 +51,6 @@ const ROW_EM = 1.08
 
 const FOUND_STORE = "timeline-found"
 const MOBILE = "(max-width: 800px)"
-const NO_DRAW =
-  "a, button, h1, h2, p, b, .note, .tl-quote, .tick, .tl-rail, .tl-mark, .tl-tools, .tl-secret, .tl-counter, .room"
 
 /** 스프링 위치 (0 → 1). mass 1, stiffness (2π/d)², damping 4π(1 − bounce)/d */
 function springAt(t: number, s: Spring) {
@@ -92,7 +98,8 @@ const SPOTS: { left?: string; right?: string; top: string; shape: Shape }[] = [
 
 function Mark(props: { shape: Shape }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
+    // 화면에 들어올 때 한 번 그어진다. 물음표의 점은 선이 다 그어진 뒤에 나타난다 (lib/draw.ts)
+    <svg viewBox="0 0 24 24" aria-hidden="true" ref={drawLines}>
       {props.shape === "spiral" && (
         <path d="M12 12c0-3.5 3.5-4.5 4.5-2 1 2.5-2 4.5-4.5 3s-1.5-5.5 2-6.5c4-1.1 7 2 6 5.5" />
       )}
@@ -108,7 +115,7 @@ function Mark(props: { shape: Shape }) {
       {props.shape === "question" && (
         <>
           <path d="M8.5 9c0-2.4 1.8-4 3.7-4s3.6 1.4 3.6 3.5c0 2.3-1.8 2.9-2.9 4.2-.6.8-.8 1.6-.8 2.3" />
-          <circle cx="12" cy="18.6" r=".9" />
+          <circle class="f" cx="12" cy="18.6" r=".9" />
         </>
       )}
       {props.shape === "loop" && (
@@ -122,10 +129,6 @@ function Mark(props: { shape: Shape }) {
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
-
-function easeOutExpo(t: number) {
-  return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t)
-}
 
 const textOf = (item: TimelineItem, lang: Lang) => (lang === "en" ? { ...item, ...item.en } : item)
 const yearOf = (year: TimelineYear, lang: Lang) => (lang === "en" ? { ...year, ...year.en } : year)
@@ -146,10 +149,11 @@ export default function Timeline(props: { lang: Lang }) {
   const [pos, setPos] = createSignal(-1)
   /** 카드를 보여 준 마지막 해. 한 번 보인 카드는 다시 숨지 않는다 */
   const [seen, setSeen] = createSignal(-1)
+  /** 레일을 그었는지. 한 번 그은 레일은 다시 긋지 않는다 */
+  const [railDrawn, setRailDrawn] = createSignal(false)
   const [found, setFound] = createSignal<number[]>([])
   const [secret, setSecret] = createSignal<{ text: string; left: number; top: number }>()
   const [secretOpen, setSecretOpen] = createSignal(false)
-  const [drawMode, setDrawMode] = createSignal(false)
   const [ready, setReady] = createSignal(false)
   const [reduced, setReduced] = createSignal(false)
   const [veiled, setVeiled] = createSignal(false)
@@ -162,12 +166,10 @@ export default function Timeline(props: { lang: Lang }) {
   let outro!: HTMLElement
   let left!: HTMLDivElement
   let yearEl!: HTMLHeadingElement
-  let drawCv!: HTMLCanvasElement
 
   // onMount에서 채운다
   let jumpTo = (_index: number) => {}
   let spinReels = (_from: number, _to: number) => {}
-  let erase = () => {}
 
   const closeSecret = () => {
     if (!secretOpen()) return
@@ -206,13 +208,15 @@ export default function Timeline(props: { lang: Lang }) {
   onMount(() => {
     // dev 서버에서만: `?motion=on`은 시스템이 "동작 줄이기"여도 움직임을 켠다 (확인용)
     const forced = import.meta.env.DEV && /[?&]motion=on\b/.test(location.search)
-    const reducedMotion = !forced && matchMedia("(prefers-reduced-motion: reduce)").matches
+    // 시스템의 동작 줄이기를 따른다. `data-motion="full"`(개발 중 확인용)이면 움직인다 (lib/flight.ts)
+    const reducedMotion = !forced && motionReduced()
     const isMobile = () => matchMedia(MOBILE).matches
     const html = document.documentElement
     const header = document.querySelector<HTMLElement>(".site-header")
     const topOffset = () => header?.offsetHeight ?? 0
     const panels = [...root.querySelectorAll<HTMLElement>(".tl-panel")]
     const reels = [...yearEl.querySelectorAll<HTMLElement>(".tl-reel")]
+    const rails = [...root.querySelectorAll<HTMLElement>(".tl-rail")]
     const cleanups: (() => void)[] = []
     const listen = <K extends keyof WindowEventMap>(
       target: Window | Document | HTMLElement,
@@ -341,6 +345,14 @@ export default function Timeline(props: { lang: Lang }) {
         if (r.top < innerHeight - 80) last = i
       })
       if (last > seen()) setSeen(last)
+      // 레일은 세로든 가로든 지금 보이는 쪽이 화면에 들어왔을 때 긋는다 (안 보이는 쪽은 높이가 0이다)
+      if (!railDrawn()) {
+        const shown = rails.some((rail) => {
+          const r = rail.getBoundingClientRect()
+          return r.height > 0 && r.top < innerHeight - r.height * RAIL_SHOWN && r.bottom > 0
+        })
+        if (shown) setRailDrawn(true)
+      }
     }
     const queueDetect = () => {
       if (queued) return
@@ -435,93 +447,6 @@ export default function Timeline(props: { lang: Lang }) {
       if (/^(Arrow(Up|Down)|Page(Up|Down)|Home|End| )$/.test(e.key)) interrupt(e)
     })
 
-    // ---- 연필: 누르고 있는 동안 그려지는 낙서 ----
-    const draw = drawCv.getContext("2d")!
-    let ink = "17, 17, 17"
-    const readInk = () => {
-      const rgb = getComputedStyle(root).color.match(/\d+(\.\d+)?/g)
-      if (rgb) ink = rgb.slice(0, 3).join(", ")
-    }
-    readInk()
-
-    function sizeCanvas() {
-      const ratio = devicePixelRatio || 1
-      const prev = document.createElement("canvas")
-      prev.width = drawCv.width
-      prev.height = drawCv.height
-      if (drawCv.width && drawCv.height) prev.getContext("2d")!.drawImage(drawCv, 0, 0)
-      drawCv.width = innerWidth * ratio
-      drawCv.height = innerHeight * ratio
-      draw.setTransform(ratio, 0, 0, ratio, 0, 0)
-      if (prev.width && prev.height) {
-        draw.drawImage(prev, 0, 0, prev.width / ratio, prev.height / ratio)
-      }
-    }
-    sizeCanvas()
-
-    function graphite(ax: number, ay: number, bx: number, by: number, speed: number) {
-      const len = Math.hypot(bx - ax, by - ay) || 1
-      const nx = -(by - ay) / len
-      const ny = (bx - ax) / len
-      const width = (1.1 + Math.random() * 0.6) * Math.max(0.25, 1 - Math.min(speed / 3.2, 0.75))
-      draw.lineCap = "round"
-      draw.lineJoin = "round"
-      for (let k = 0; k < 3; k++) {
-        const off = (Math.random() - 0.5) * (width + 0.4) * 0.9
-        const a = 0.6 * (k === 0 ? 1 : 0.4) * (0.75 + Math.random() * 0.25)
-        draw.strokeStyle = `rgba(${ink}, ${a})`
-        draw.lineWidth = (width + 0.4) * (k === 0 ? 1 : 0.5)
-        draw.beginPath()
-        draw.moveTo(ax + nx * off, ay + ny * off)
-        draw.lineTo(bx + nx * off, by + ny * off)
-        draw.stroke()
-      }
-    }
-
-    const clearDrawing = () => draw.clearRect(0, 0, innerWidth, innerHeight)
-    erase = () => {
-      if (reducedMotion) return clearDrawing()
-      const start = performance.now()
-      const band = 140
-      const sweep = (now: number) => {
-        const raw = Math.min(1, (now - start) / 520)
-        draw.clearRect(easeOutExpo(raw) * (innerWidth + band) - band, 0, band, innerHeight)
-        if (raw < 1) requestAnimationFrame(sweep)
-      }
-      requestAnimationFrame(sweep)
-    }
-
-    // 넓은 화면에서는 빈 종이를 누르면 바로, 휴대폰에서는 "그리기"를 켰을 때만 그린다
-    let last: { x: number; y: number; t: number } | undefined
-    listen(
-      root,
-      "pointerdown",
-      (e) => {
-        if (e.button !== 0 || (e.target as Element).closest(NO_DRAW)) return
-        if (e.pointerType === "touch" && !drawMode()) return
-        e.preventDefault()
-        last = { x: e.clientX, y: e.clientY, t: e.timeStamp }
-      },
-      { passive: false },
-    )
-    listen(
-      root,
-      "touchmove",
-      (e) => {
-        if (last) e.preventDefault()
-      },
-      { passive: false },
-    )
-    listen(window, "pointermove", (e) => {
-      if (!last) return
-      const dt = Math.max(1, e.timeStamp - last.t)
-      const speed = Math.hypot(e.clientX - last.x, e.clientY - last.y) / dt
-      graphite(last.x, last.y, e.clientX, e.clientY, speed)
-      last = { x: e.clientX, y: e.clientY, t: e.timeStamp }
-    })
-    listen(window, "pointerup", () => (last = undefined))
-    listen(window, "pointercancel", () => (last = undefined))
-
     // 숨은 이야기는 커서가 가까워질수록 또렷해진다
     const marks = [...root.querySelectorAll<HTMLElement>(".tl-mark")]
     listen(
@@ -546,14 +471,8 @@ export default function Timeline(props: { lang: Lang }) {
     listen(document, "keydown", (e) => {
       if (e.key === "Escape") closeSecret()
     })
-    listen(window, THEME_EVENT as keyof WindowEventMap, () => {
-      // 테마가 바뀌면 연필 색도 바뀐다. 이전 색으로 그린 낙서는 지운다.
-      requestAnimationFrame(readInk)
-      clearDrawing()
-    })
     listen(window, "resize", () => {
       measure()
-      sizeCanvas()
       queueDetect()
     })
 
@@ -567,7 +486,8 @@ export default function Timeline(props: { lang: Lang }) {
   function Rail(railProps: { class: string }) {
     return (
       <div
-        class={`tl-rail ${railProps.class}`}
+        class="tl-rail"
+        classList={{ [railProps.class]: true, drawn: railDrawn() }}
         role="group"
         aria-label={t(HOME.railLabel)}
         style={{ "--p": progress() }}
@@ -580,7 +500,7 @@ export default function Timeline(props: { lang: Lang }) {
               class="tick"
               classList={{ on: i() === current(), past: i() <= current() }}
               type="button"
-              style={{ "--at": `${frac(i()) * 100}%` }}
+              style={{ "--at": `${frac(i()) * 100}%`, "--f": frac(i()) }}
               aria-current={i() === current() ? "true" : undefined}
               onClick={() => jumpTo(i())}
             >
@@ -596,31 +516,6 @@ export default function Timeline(props: { lang: Lang }) {
 
   return (
     <div class="tl" classList={{ ready: ready(), reduced: reduced(), veiled: veiled() }} ref={root}>
-      <canvas class="tl-canvas" ref={drawCv} aria-hidden="true" />
-
-      <div class="tl-tools">
-        <button
-          class="tl-tool tl-draw-toggle"
-          type="button"
-          aria-pressed={drawMode()}
-          onClick={() => setDrawMode(!drawMode())}
-        >
-          <svg viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M10.8 2.7l2.5 2.5-7.6 7.6-3.2.7.7-3.2z" />
-            <path d="M9.3 4.2l2.5 2.5" />
-          </svg>
-          {t(HOME.draw)}
-        </button>
-        <button class="tl-tool" type="button" onClick={() => erase()}>
-          <svg viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M6.5 13.5h7" />
-            <path d="M2.8 9.7l6-6a1 1 0 0 1 1.4 0l3.1 3.1a1 1 0 0 1 0 1.4l-5.3 5.3H5.3l-2.5-2.4a1 1 0 0 1 0-1.4z" />
-            <path d="M5.6 6.9l3.5 3.5" />
-          </svg>
-          {t(HOME.erase)}
-        </button>
-      </div>
-
       <section class="tl-intro" ref={intro}>
         <p class="tl-summary">
           {fill(t(HOME.summary), {
@@ -640,9 +535,13 @@ export default function Timeline(props: { lang: Lang }) {
             <cite>— {t(HOME.quote.source)}</cite>
           </figcaption>
         </figure>
-        <p class="tl-hint">
-          <i aria-hidden="true" /> {t(HOME.hint)}
-        </p>
+        {/* 아래로 이어진다는 표시. 말로 안내하지 않고, 아래로 흘러내리는 선과 화살촉으로만 알린다 */}
+        <div class="tl-hint" aria-hidden="true">
+          <i />
+          <svg viewBox="0 0 12 8" width="14" height="9">
+            <path d="M1 1 L6 6.5 L11 1" />
+          </svg>
+        </div>
       </section>
 
       <div class="tl-grid">
@@ -738,7 +637,11 @@ export default function Timeline(props: { lang: Lang }) {
               const spot = () => SPOTS[secretYears().indexOf(year) % SPOTS.length]
               const isFound = () => found().includes(year.year)
               return (
-                <section class="tl-panel" aria-label={String(year.year)}>
+                <section
+                  class="tl-panel"
+                  classList={{ drawn: seen() >= yi() }}
+                  aria-label={String(year.year)}
+                >
                   <div class="tl-panel-head">
                     <p class="tl-caption">
                       {year.year} · {records(year.items.length)}
@@ -804,7 +707,9 @@ export default function Timeline(props: { lang: Lang }) {
                             class="tl-card-wrap"
                             classList={{ in: seen() >= yi() }}
                             style={{
-                              "transition-delay": seen() >= yi() ? `${j() * STAGGER_MS}ms` : "0ms",
+                              // 선이 먼저, 글이 뒤
+                              "transition-delay":
+                                seen() >= yi() ? `${LINE_LEAD_MS + j() * STAGGER_MS}ms` : "0ms",
                             }}
                           >
                             <Show when={item.href} fallback={<div class="note">{body(false)}</div>}>

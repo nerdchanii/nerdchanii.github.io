@@ -1,6 +1,8 @@
 import { A } from "@solidjs/router"
 import { For } from "solid-js"
+import NoteGraph from "../components/NoteGraph.tsx"
 import PostList from "../components/PostList.tsx"
+import Shelf from "../components/Shelf.tsx"
 import Seo from "../components/Seo.tsx"
 import { posts, type Entry } from "../lib/content.ts"
 import { dayOf } from "../lib/site.ts"
@@ -27,14 +29,22 @@ export default function Blog() {
           <A href="/tags">태그로 보기 →</A>
         </p>
       </header>
-      <For each={byYear(posts)}>
-        {([year, list]) => (
-          <section class="year-group">
-            <h2>{year}</h2>
-            <PostList entries={list} />
-          </section>
-        )}
-      </For>
+      <Shelf years={byYear(posts)} />
+      <section class="note-links">
+        <h2 class="eyebrow">LINKS</h2>
+        <NoteGraph />
+      </section>
+      {/* 책장은 넓게, 그 아래 목록은 읽기 좋은 폭으로 */}
+      <div class="list-narrow">
+        <For each={byYear(posts)}>
+          {([year, list]) => (
+            <section class="year-group">
+              <h2>{year}</h2>
+              <PostList entries={list} />
+            </section>
+          )}
+        </For>
+      </div>
     </>
   )
 }

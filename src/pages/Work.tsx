@@ -1,8 +1,10 @@
 import { For } from "solid-js"
+import { draw } from "../lib/draw.ts"
 import SmartLink from "../components/SmartLink.tsx"
 import Seo from "../components/Seo.tsx"
 import { localize, type Lang } from "../lib/i18n.ts"
 import { CONTRIBUTIONS, EXPERIMENTS, SELECTED_WORKS } from "../lib/profile.ts"
+import "../styles/pages-line.css"
 
 const STEPS = [
   { key: "problem", ko: "증상", en: "SYMPTOM" },
@@ -11,12 +13,19 @@ const STEPS = [
   { key: "result", ko: "결과", en: "RESULT" },
 ] as const
 
+/** 단계마다 레일 위에 놓는 속이 빈 원. 뒤의 레일을 가리도록 바탕색으로 채운다 */
+const Dot = () => (
+  <svg class="ln mark" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+    <circle class="paper" cx="8" cy="8" r="6" />
+  </svg>
+)
+
 export default function Work(props: { lang: Lang }) {
   const t = (text: Record<Lang, string>) => text[props.lang]
   const ko = () => props.lang === "ko"
 
   return (
-    <div class="page">
+    <div class="page page-line">
       <Seo
         title="Work"
         description={
@@ -42,7 +51,7 @@ export default function Work(props: { lang: Lang }) {
       <section class="works">
         <For each={SELECTED_WORKS}>
           {(work, i) => (
-            <article class="work" id={work.id}>
+            <article ref={draw} class="work" id={work.id}>
               <header class="work-head">
                 <p class="eyebrow">
                   W{String(i() + 1).padStart(2, "0")} · {work.period}
@@ -52,16 +61,31 @@ export default function Work(props: { lang: Lang }) {
                   <For each={work.tags}>{(tag) => <li>{tag}</li>}</For>
                 </ul>
               </header>
-              <dl class="steps">
-                <For each={STEPS}>
-                  {(step) => (
-                    <div>
-                      <dt class="eyebrow">{step[props.lang]}</dt>
-                      <dd>{t(work[step.key])}</dd>
-                    </div>
-                  )}
-                </For>
-              </dl>
+              {/* 증상에서 결과까지를 세로 선 하나로 잇는다. 레일은 CSS(.flow::before), 표식과 화살촉은 선 그림 */}
+              <div class="flow">
+                <dl class="steps">
+                  <For each={STEPS}>
+                    {(step, n) => (
+                      <div style={{ "--i": n() }}>
+                        <dt class="eyebrow">
+                          <Dot />
+                          <span>{step[props.lang]}</span>
+                        </dt>
+                        <dd>{t(work[step.key])}</dd>
+                      </div>
+                    )}
+                  </For>
+                </dl>
+                <svg
+                  class="ln flow-end"
+                  viewBox="0 0 16 10"
+                  width="16"
+                  height="10"
+                  aria-hidden="true"
+                >
+                  <path d="M2 1 L8 9 L14 1" />
+                </svg>
+              </div>
               <p class="link-row">
                 <For each={work.links}>
                   {(link) => (
@@ -76,7 +100,7 @@ export default function Work(props: { lang: Lang }) {
         </For>
       </section>
 
-      <section class="split" id="open-source">
+      <section ref={draw} class="split" id="open-source">
         <p class="eyebrow">{ko() ? "오픈소스" : "OPEN SOURCE"}</p>
         <ul class="ledger split-body">
           <For each={CONTRIBUTIONS}>
@@ -95,7 +119,7 @@ export default function Work(props: { lang: Lang }) {
         </ul>
       </section>
 
-      <section class="split">
+      <section ref={draw} class="split">
         <p class="eyebrow">{ko() ? "실험과 팀 프로젝트" : "EXPERIMENTS"}</p>
         <ul class="ledger split-body">
           <For each={EXPERIMENTS}>

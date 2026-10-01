@@ -11,14 +11,48 @@
   justify-content: space-between;
   gap: 0.25rem 1rem;
   padding: 0.75rem 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--line);
 }
 
 .title {
+  color: var(--text);
   font-weight: 600;
+}
+
+.title:hover {
+  text-decoration: none;
+}
+
+/* 행에 올리면 제목 앞에 짧은 선이 그어지고 제목이 그만큼 밀린다 */
+.title::before {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 1px;
+  margin-right: 0;
+  background: currentColor;
+  vertical-align: 0.3em;
+  transition:
+    width 0.35s var(--ease-draw),
+    margin-right 0.35s var(--ease-draw);
+}
+
+.item:hover .title::before,
+.title:focus-visible::before {
+  width: 0.875rem;
+  margin-right: 0.5rem;
 }
 
 .meta {
   color: var(--text-muted);
-  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+/* 동작 줄이기: 선이 자라지 않고 바로 놓인다 */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) .title::before {
+    transition: none;
+  }
 }

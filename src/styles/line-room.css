@@ -1,0 +1,83 @@
+/*
+ * 홈의 방 (선 그림). 그림의 약속은 line.css.
+ * 물건은 링크다. 이름표는 늘 흐리게 보이고, 올려 두거나 초점이 가면 물건이 톡 올라오며 이름표가 진해진다.
+ */
+.line-room {
+  margin: 0.5rem 0 3rem;
+}
+
+.line-room > svg {
+  width: 100%;
+  height: auto;
+}
+
+.line-room .thing {
+  color: var(--text);
+  cursor: pointer;
+}
+
+.line-room .thing-art {
+  transition: transform 0.3s var(--ease-pop);
+}
+
+.line-room .thing:hover .thing-art,
+.line-room .thing:focus-visible .thing-art {
+  transform: translateY(-5px);
+}
+
+.line-room .thing:focus-visible {
+  outline: none;
+}
+
+.line-room .thing-label {
+  fill: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  transition: fill 0.2s;
+}
+
+.line-room .thing:hover .thing-label,
+.line-room .thing:focus-visible .thing-label {
+  fill: var(--text);
+}
+
+/* 테두리 대신, 초점이 간 물건의 이름표에 밑줄을 긋는다 */
+.line-room .thing:focus-visible .thing-label {
+  text-decoration: underline;
+}
+
+.line-room.armed .thing-label {
+  opacity: 0;
+}
+
+.line-room.armed.play .thing-label {
+  animation: ln-fade 0.5s ease 1.6s forwards;
+}
+
+/* 좁은 화면: 그림이 너무 작아지지 않게 옆으로 넘겨 본다 */
+@media (max-width: 640px) {
+  /* 아래 여백은 넘길 때 나타나는 스크롤 막대가 맨 아래 이름표를 덮지 않게 둔다 */
+  .line-room {
+    margin-left: -24px;
+    margin-right: -24px;
+    padding-bottom: 12px;
+    overflow-x: auto;
+  }
+
+  .line-room > svg {
+    width: 760px;
+  }
+
+  /* 그림이 0.76배로 줄어 있다. 이름표는 화면에서 10px 남짓이 되게 키운다 */
+  .line-room .thing-label {
+    font-size: 14px;
+    letter-spacing: 0.04em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) .line-room .thing-art {
+    transition: none;
+  }
+}

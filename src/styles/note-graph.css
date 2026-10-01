@@ -1,0 +1,185 @@
+/*
+ * 글 사이의 연결 (/blog). 그림의 약속은 line.css, 자리 계산은 lib/graph.ts.
+ * 점은 글로 가는 링크다. 올려 두거나 초점이 가면 그 글과 이어진 선·글만 진하게 남는다.
+ */
+.note-links {
+  margin: 0 0 3rem;
+}
+
+.note-links > .eyebrow {
+  margin-bottom: 1rem;
+}
+
+.note-graph {
+  margin: 0;
+}
+
+/* 판은 둘이다. 좁은 화면은 한 열로 길게, 넓은 화면은 세 열로 */
+.note-graph .ng-tall {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
+
+.note-graph .ng-wide {
+  display: none;
+  width: 100%;
+  max-width: 1120px;
+  height: auto;
+}
+
+@media (min-width: 960px) {
+  .note-graph .ng-tall {
+    display: none;
+  }
+
+  .note-graph .ng-wide {
+    display: block;
+  }
+}
+
+/* ── 묶음: 분류 색은 글을 꿰는 얇은 줄로만 ── */
+.note-graph svg.ln .ng-spine {
+  stroke: var(--c);
+  stroke-width: 1.6;
+}
+
+.note-graph svg.ln .ng-head {
+  text-transform: uppercase;
+}
+
+/* ── 선: 먹색은 본문 링크(.thin), 옅은 선은 같은 태그 ── */
+.note-graph svg.ln .ng-tie {
+  stroke: var(--text-faint);
+  stroke-width: 1.1;
+}
+
+.note-graph .ng-edge {
+  transition: opacity 0.2s;
+}
+
+.note-graph svg.ln .ng-edge path {
+  transition:
+    stroke 0.2s,
+    stroke-width 0.2s;
+}
+
+/* ── 점과 이름표 ── */
+.note-graph .ng-node {
+  color: var(--text);
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.note-graph .ng-node:focus-visible {
+  outline: none;
+}
+
+.note-graph svg.ln .ng-hit {
+  fill: none;
+  stroke: none;
+  pointer-events: all;
+}
+
+.note-graph svg.ln .ng-node circle {
+  stroke-width: 1.6;
+}
+
+.note-graph .ng-dot {
+  transition: transform 0.3s var(--ease-pop);
+}
+
+/* 선이 이름표 뒤로 지나가도 글자가 읽히게 종이색 테두리를 두른다 */
+.note-graph svg.ln :is(.ng-label, .ng-head) {
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.note-graph svg.ln .ng-label {
+  fill: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+/* 올려 두면 점이 톡 커지고, 이어진 것만 진하게 남는다 */
+.note-graph .ng-node:hover .ng-dot,
+.note-graph .ng-node:focus-visible .ng-dot {
+  transform: scale(1.3);
+}
+
+.note-graph svg.ln .ng-node:is(:hover, :focus-visible) circle {
+  stroke-width: 2;
+}
+
+/* 테두리 대신, 초점이 간 글의 이름표에 밑줄을 긋는다 (line-room.css와 같다) */
+.note-graph .ng-node:focus-visible .ng-label {
+  text-decoration: underline;
+}
+
+.note-graph.focused .ng-node:not(.on) {
+  opacity: 0.3;
+}
+
+.note-graph.focused .ng-edge:not(.on) {
+  opacity: 0.25;
+}
+
+.note-graph svg.ln .ng-edge.on path {
+  stroke: var(--text);
+  stroke-width: 2;
+}
+
+/*
+ * 나타남: 선이 그어지는 동안 점이 차례로 톡 나타나고 이름표가 따라 나온다.
+ * 점은 draw.ts가 건너뛰게 해 두고(data-nodraw) 여기서 따로 움직인다.
+ * 끝난 뒤에는 애니메이션이 값을 쥐고 있지 않아야 올려 둘 때의 변형이 먹는다 (backwards).
+ */
+.note-graph .armed :is(.ng-dot, .ng-label, .ng-head) {
+  opacity: 0;
+}
+
+.note-graph .armed.play :is(.ng-dot, .ng-label, .ng-head) {
+  opacity: 1;
+}
+
+.note-graph .armed.play .ng-dot {
+  animation: ng-pop 0.5s var(--ease-pop) var(--d, 0s) backwards;
+}
+
+.note-graph .armed.play .ng-label {
+  animation: ng-fade 0.4s ease calc(var(--d, 0s) + 0.12s) backwards;
+}
+
+.note-graph .armed.play .ng-head {
+  animation: ng-fade 0.4s ease 0.2s backwards;
+}
+
+@keyframes ng-pop {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+}
+
+@keyframes ng-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) .note-graph .armed.play :is(.ng-dot, .ng-label, .ng-head) {
+    animation: ng-fade 0.4s ease backwards;
+  }
+
+  :root:not([data-motion="full"]) .note-graph .ng-dot {
+    transition: none;
+  }
+
+  :root:not([data-motion="full"]) .note-graph .ng-node:is(:hover, :focus-visible) .ng-dot {
+    transform: none;
+  }
+}

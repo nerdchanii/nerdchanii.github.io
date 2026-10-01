@@ -13,6 +13,8 @@ declare module "virtual:content" {
     date: string | null
     updated: string | null
     description: string | null
+    /** 본문 글자 수 (공백 제외) */
+    chars: number
     draft: boolean
     comments: boolean
     /** 예전 URL (리다이렉트 페이지로 출력) */

@@ -44,6 +44,8 @@ export type ContentEntry = {
   /** 수정일. git 마지막 커밋 */
   updated: string | null
   description: string | null
+  /** 본문 글자 수 (공백 제외). 책장에서 책 두께를 정한다 */
+  chars: number
   draft: boolean
   comments: boolean
   /** 예전 URL. 이 경로들에는 `url`로 보내는 리다이렉트 페이지를 만든다 */
@@ -298,6 +300,7 @@ export function loadContent({ withDates = true } = {}): ContentEntry[] {
       updated: toIsoOr(fm.updated ?? fm.modified ?? fm.lastmod ?? fm["last-modified"], git.updated),
       // Quartz처럼 description이 없으면 본문 앞부분으로 만든다.
       description: fm.description ?? excerpt(preprocessObsidian(body, { mdx }), { mdx }),
+      chars: body.replace(/\s/g, "").length,
       draft: false,
       comments: fm.comments ?? true,
       aliases: [...rawAliases, ...(permalink ? [permalink] : [])].map((a) =>

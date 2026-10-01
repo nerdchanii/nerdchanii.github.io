@@ -1,0 +1,565 @@
+/*
+ * 책장(/blog), 펼친 책(글 페이지), 그 사이를 잇는 겹(.flight).
+ * 선 그림의 약속은 line.css, 움직임의 차례는 lib/flight.ts에 있다.
+ */
+
+/* ── 책장 ── */
+.shelf {
+  --cell: 214px;
+  --plank: 10px;
+  position: relative;
+  margin: 1.5rem 0 3.5rem;
+  padding: 10px 10px 0;
+}
+
+.shelf-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.shelf-frame.inner {
+  inset: 8px 8px 0;
+  width: calc(100% - 16px);
+  height: calc(100% - 8px);
+}
+
+/* 바닥선과 다리 */
+.shelf::after {
+  content: "";
+  position: absolute;
+  left: -28px;
+  right: -28px;
+  bottom: -30px;
+  height: 30px;
+  border-bottom: 2px solid var(--text);
+  background:
+    linear-gradient(var(--text-muted), var(--text-muted)) 42px 0 / 1.2px 100% no-repeat,
+    linear-gradient(var(--text-muted), var(--text-muted)) calc(100% - 42px) 0 / 1.2px 100% no-repeat;
+  transform-origin: left;
+}
+
+.shelf-row {
+  position: relative;
+  padding: 8px 20px 0;
+}
+
+.shelf-year {
+  position: absolute;
+  top: 12px;
+  left: 18px;
+  margin: 0;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+/* 책은 칸(--cell)마다 바닥에 붙고, 줄이 넘어가면 선반이 한 칸 더 생긴다. 선반 판자는 배경으로 긋는다 */
+.shelf-books {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--plank) 3px;
+  margin: 0 -20px;
+  padding: 0 20px var(--plank) 68px;
+  background-image:
+    linear-gradient(
+      to bottom,
+      transparent var(--cell),
+      var(--text) var(--cell) calc(var(--cell) + 2px),
+      transparent calc(var(--cell) + 2px)
+    ),
+    linear-gradient(
+      to bottom,
+      transparent calc(var(--cell) + 7px),
+      var(--text-muted) calc(var(--cell) + 7px) calc(var(--cell) + 8.2px),
+      transparent calc(var(--cell) + 8.2px)
+    );
+  background-repeat: repeat-y;
+  background-size:
+    100% calc(var(--cell) + var(--plank)),
+    100% calc(var(--cell) + var(--plank));
+}
+
+.book {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  width: var(--w);
+  height: var(--cell);
+  color: var(--text);
+}
+
+.book:hover {
+  text-decoration: none;
+}
+
+.book-in {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: var(--h);
+  background: var(--bg);
+  transition: transform 0.28s var(--ease-pop);
+}
+
+.book:hover .book-in,
+.book:focus-visible .book-in {
+  transform: translateY(-10px);
+}
+
+.book:focus-visible {
+  outline: none;
+}
+
+.book:focus-visible .book-in {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+.book-in svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.book-in .band {
+  stroke: var(--c);
+  stroke-width: 3;
+}
+
+.book-title {
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: 50%;
+  overflow: hidden;
+  transform: translateX(-50%);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  writing-mode: vertical-rl;
+}
+
+/* 빠진 자리: 점선 윤곽만 남는다 */
+.book.away .book-in {
+  visibility: hidden;
+}
+
+.book.away::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--h);
+  border: 2px dashed var(--line);
+}
+
+/* 장식도 책처럼 칸 높이를 다 차지한다. 혼자 다음 줄로 넘어가도 선반 판자와 어긋나지 않는다 */
+.shelf-deco {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  height: var(--cell);
+  margin-left: auto;
+}
+
+.shelf-deco svg {
+  margin-bottom: -1px;
+}
+
+/* 좁은 화면: 연도는 선반 위 빈 곳에 두고, 책이 폭을 다 쓴다. 장식은 책 자리를 차지하므로 뺀다 */
+@media (max-width: 640px) {
+  .shelf::after {
+    left: -14px;
+    right: -14px;
+    background-position:
+      28px 0,
+      calc(100% - 28px) 0;
+  }
+
+  .shelf-year {
+    top: 6px;
+    left: 14px;
+  }
+
+  .shelf-books {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .shelf-deco {
+    display: none;
+  }
+}
+
+/* 처음 나타날 때: 선반이 그어지고 책이 떨어져 꽂힌다 */
+.shelf.armed .shelf-books {
+  background-size:
+    0% calc(var(--cell) + var(--plank)),
+    0% calc(var(--cell) + var(--plank));
+}
+
+.shelf.armed.play .shelf-books {
+  background-size:
+    100% calc(var(--cell) + var(--plank)),
+    100% calc(var(--cell) + var(--plank));
+  transition: background-size 0.9s var(--ease-draw);
+}
+
+.shelf.armed::after {
+  transform: scaleX(0);
+}
+
+.shelf.armed.play::after {
+  transform: scaleX(1);
+  transition: transform 0.9s var(--ease-draw) 0.2s;
+}
+
+.shelf.armed :is(.book, .shelf-year) {
+  opacity: 0;
+}
+
+.shelf.armed .book {
+  transform: translateY(-26px);
+}
+
+.shelf.armed.play .book {
+  animation: book-drop 0.55s var(--ease-pop) forwards;
+  animation-delay: var(--d);
+}
+
+.shelf.armed.play .shelf-year {
+  animation: ln-fade 0.5s ease 0.5s forwards;
+}
+
+@keyframes book-drop {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── 책장과 글 사이를 나는 책 ── */
+.flight {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.flight-veil {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  opacity: 0;
+}
+
+.flight-book,
+.flight-left {
+  position: absolute;
+  overflow: hidden;
+  background: var(--surface);
+  border: 2px solid var(--text);
+}
+
+.flight-left {
+  border-right: 0;
+}
+
+.flight-spine {
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: 50%;
+  overflow: hidden;
+  transform: translateX(-50%);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  writing-mode: vertical-rl;
+}
+
+.flight-cover {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 250px;
+  padding: 0 30px;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+}
+
+.flight-sec {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+}
+
+.flight-title {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.flight-cover i {
+  width: 46px;
+  height: 3px;
+  background: var(--c);
+}
+
+/* ── 글 페이지 ── */
+/* 머리: 분류 라벨, 제목, 날짜, 태그, 분류 색 줄. 책 모양이 아닐 때(좁은 화면, 읽기 모드, 폴더 index)도 같다 */
+.post .post-header {
+  margin-bottom: 1.75rem;
+}
+
+.post-section {
+  margin-bottom: 0.5rem;
+}
+
+.post-rule {
+  display: block;
+  width: 46px;
+  height: 3px;
+  margin: 1rem 0 0;
+  background: var(--c);
+}
+
+.book-toc,
+.book-tools {
+  display: none;
+}
+
+/* "← 책장"은 어느 폭에서나 보인다. 읽기 모드 단추는 펼친 책이 되는 넓은 화면에서만 뜻이 있다 */
+.post.is-book .book-tools {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+}
+
+.book-tools :is(a, button) {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.book-tools :is(a, button):hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.book-tools button {
+  display: none;
+}
+
+/* 목차에서 건너온 장 제목이 붙어 있는 사이트 머리(.site-header) 밑에 가려지지 않게 한다 */
+.post .prose :is(h1, h2, h3, h4, h5, h6) {
+  scroll-margin-top: 5rem;
+}
+
+/* 본문: 칠한 면 대신 선으로. 글자 크기와 줄 간격, 수식과 코드 색은 global.css 그대로 */
+.post .prose blockquote:not(.callout) {
+  border-left: 2px solid var(--text);
+}
+
+.post .prose hr {
+  height: 0;
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1.2px solid var(--text-muted);
+}
+
+.post .prose :is(th, td) {
+  border-color: var(--line);
+}
+
+.post .prose th {
+  border-bottom: 2px solid var(--text);
+}
+
+.post .prose pre,
+.post .prose pre.shiki {
+  background: none;
+  border: 1.2px solid var(--line);
+  border-radius: 2px;
+}
+
+/* 글줄 자리: 본문이 오기 전에 선으로 먼저 그어진다 */
+.ghost {
+  width: 100%;
+  height: 240px;
+}
+
+.ghost line {
+  /* 폭 100짜리 그림을 면 너비로 늘려 놓는다. 그 배율보다 넉넉한 길이로 그어야 선이 끊기지 않는다 (line.css의 --k) */
+  --k: 12;
+  stroke: var(--line);
+  stroke-dasharray: var(--k) calc(var(--k) * 2);
+  stroke-dashoffset: var(--k);
+  animation: ln-draw 0.5s var(--ease-draw) forwards;
+  animation-delay: var(--d);
+}
+
+/* 펼친 책: 넓은 화면에서, 읽기 모드가 아닐 때 */
+@media (min-width: 960px) {
+  :root:not([data-view="plain"]) .shell:has(.post.is-book) .site-main {
+    max-width: 1152px;
+    padding-top: 2.75rem;
+  }
+
+  :root:not([data-view="plain"]) .post.is-book {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    min-height: calc(100vh - 11rem);
+    background: var(--surface);
+    border: 2px solid var(--text);
+  }
+
+  :root:not([data-view="plain"]) .post.is-book .post-header {
+    position: sticky;
+    top: 57px;
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 57px);
+    margin-bottom: 0;
+    padding: 2.25rem 2.125rem 1.5rem;
+  }
+
+  :root:not([data-view="plain"]) .post.is-book .post-header h1 {
+    margin: 0.5rem 0 0.5rem;
+    font-size: 1.625rem;
+    line-height: 1.35;
+  }
+
+  :root:not([data-view="plain"]) .post.is-book .post-body {
+    min-width: 0;
+    padding: 1.5rem 2.5rem 3rem;
+    border-left: 2px solid var(--text);
+  }
+
+  :root:not([data-view="plain"]) .post.is-book .tag-list {
+    margin: 0.75rem 0 0;
+  }
+
+  /* 목차는 왼쪽 면으로 옮긴다 (Post.tsx가 본문의 목차를 베껴 넣는다) */
+  :root:not([data-view="plain"]) .post.is-book .book-toc:not(:empty) {
+    display: block;
+    flex: 1;
+    min-height: 0;
+    margin-top: 1.25rem;
+    padding-top: 0.75rem;
+    overflow: auto;
+    border-top: 1px solid var(--border);
+    font-size: 0.875rem;
+    line-height: 2;
+  }
+
+  .book-toc ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .book-toc .toc-depth-3 {
+    padding-left: 0.875rem;
+  }
+
+  .book-toc a {
+    color: var(--text);
+  }
+
+  :root:not([data-view="plain"]) .post.is-book .prose .toc {
+    position: static;
+    width: auto;
+    max-height: none;
+    margin: 0 0 1.5rem;
+  }
+
+  :root:not([data-view="plain"]) .post.is-book.has-toc .prose .toc {
+    display: none;
+  }
+
+  .book-tools button {
+    display: inline;
+  }
+
+  .book-tools .when-plain,
+  :root[data-view="plain"] .book-tools .when-book {
+    display: none;
+  }
+
+  :root[data-view="plain"] .book-tools .when-plain {
+    display: inline;
+  }
+
+  /* 책이 펼쳐지는 동안에는 내용이 비어 있다가, 다 펼쳐지면 나타난다 */
+  .post.is-book :is(.post-header, .post-body) > * {
+    transition: opacity 0.35s ease;
+  }
+
+  .post.is-book.landing :is(.post-header, .post-body) > * {
+    opacity: 0;
+    transition: none;
+  }
+}
+
+/* 동작 줄이기: 책이 떨어지거나 선반이 그어지지 않고 제자리에서 흐려 나타난다 */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) .shelf.armed .book {
+    transform: none;
+  }
+
+  :root:not([data-motion="full"]) .shelf.armed.play .book {
+    animation: ln-fade 0.4s ease forwards;
+    animation-delay: 0s;
+  }
+
+  :root:not([data-motion="full"]) .shelf.armed .shelf-books {
+    background-size:
+      100% calc(var(--cell) + var(--plank)),
+      100% calc(var(--cell) + var(--plank));
+    transition: none;
+  }
+
+  :root:not([data-motion="full"]) .shelf.armed::after {
+    transform: none;
+    transition: none;
+  }
+
+  :root:not([data-motion="full"]) .book-in {
+    transition: none;
+  }
+
+  :root:not([data-motion="full"]) .ghost line {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    opacity: 0;
+    animation: ln-fade 0.4s ease forwards;
+  }
+}

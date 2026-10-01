@@ -17,9 +17,11 @@ import Tags from "../pages/Tags.tsx"
 import Work from "../pages/Work.tsx"
 import "katex/dist/katex.min.css"
 import "../styles/global.css"
+import "../styles/line.css"
+import "../styles/book.css"
 
 /** 넓은 레이아웃을 쓰는 소개 페이지. 글과 목록은 읽기 좋은 폭을 유지한다 */
-const WIDE = new Set(["/", "/about", "/work", "/en", "/en/about", "/en/work"])
+const WIDE = new Set(["/", "/about", "/work", "/blog", "/en", "/en/about", "/en/work"])
 
 function Layout(props: RouteSectionProps) {
   // 첫 페이지와 클라이언트 이동마다 page_view를 보낸다. 제목(<Title>)이 바뀐 뒤에 읽도록 한 틱 미룬다.
@@ -42,9 +44,16 @@ function Layout(props: RouteSectionProps) {
       <Title>{SITE_NAME}</Title>
       <header class="site-header">
         <A href={localize(lang(), "/")} class="site-name" end>
-          <svg viewBox="0 0 16 16" aria-hidden="true" class="site-mark">
-            <rect x="1.5" y="1.5" width="13" height="13" fill="none" stroke="currentColor" />
-            <circle cx="8" cy="8" r="2.5" fill="currentColor" />
+          {/* 사이트 표식: 차니의 얼굴 (곱슬머리와 둥근 안경). 파비콘(public/favicon.svg)과 같은 그림이다 */}
+          <svg viewBox="0 0 32 32" aria-hidden="true" class="site-mark">
+            <path d="M7.5 15 C7 22 11 27.5 16 27.5 C21 27.5 25 22 24.5 15.5 C24.5 14.5 23.5 13 22 13 C21 11.5 18 11 17 13.2 C16 12 13.5 12 12.5 13.5 C11.5 12.5 9 12.5 7.5 15 Z" />
+            <path d="M7 15 C3.5 14.5 3 10.5 6 9.5 C5 6 9 4 11 5.5 C12 2.5 17 2 18.5 4.5 C21 2.5 25.5 4 25 7.5 C28.5 8 29 12.5 26 13.5 C26.5 15 25.5 15.5 24.5 15.5 C24.5 14.5 23.5 13 22 13 C21 11.5 18 11 17 13.2 C16 12 13.5 12 12.5 13.5 C11.5 12.5 9 12.5 7.5 15 Z" />
+            <circle cx="12" cy="19.6" r="3.3" />
+            <circle cx="20" cy="19.6" r="3.3" />
+            <path class="open" d="M15.3 19.2 Q16 18.4 16.7 19.2" />
+            <path class="open" d="M14.2 24.6 Q16 25.9 17.8 24.6" />
+            <circle class="dot" cx="12.2" cy="19.8" r="1.1" />
+            <circle class="dot" cx="19.8" cy="19.8" r="1.1" />
           </svg>
           <span>NERDCHANII</span>
         </A>
@@ -65,7 +74,7 @@ function Layout(props: RouteSectionProps) {
           >
             {lang() === "ko" ? "EN" : "KO"}
           </A>
-          <ThemeToggle />
+          <ThemeToggle lang={lang()} />
         </nav>
       </header>
       <main class="site-main">

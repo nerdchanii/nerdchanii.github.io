@@ -10,6 +10,9 @@
  * 스프링 곡선(--ease-*)과 멈추는 시간(--t-*)은 Timeline.tsx가 스프링 식으로 계산해 넣는다.
  * 아래 값은 linear()를 못 쓰는 브라우저와 스크립트가 붙기 전에 쓰는 기본값이다.
  * 위치가 스크롤을 따라가는 것(레일의 점과 채움선, 배경 연도)은 Timeline.tsx가 매 프레임 정한다.
+ *
+ * 선은 처음 화면에 들어올 때 한 번 그어진다 (line.css의 --ease-draw, --t-draw).
+ * 숨기는 것은 모두 .tl.ready 뒤에만 두어, 스크립트가 없으면 처음부터 다 보인다.
  */
 .tl {
   --phi: 1.618;
@@ -67,15 +70,6 @@
   scroll-margin-top: var(--tl-top);
 }
 
-.tl-canvas {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
 .tl button {
   font-family: inherit;
 }
@@ -98,59 +92,6 @@
 .tl.veiled .tl-grid,
 .tl.veiled .tl-outro {
   opacity: 0;
-}
-
-/* 도구 버튼 */
-.tl-tools {
-  position: fixed;
-  right: var(--sp-3);
-  bottom: var(--sp-3);
-  z-index: 8;
-  display: flex;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--surface);
-}
-
-.tl-tool {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-1);
-  height: 44px;
-  padding: 0 var(--sp-3);
-  border: 0;
-  background: none;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    background-color var(--t-quick) var(--ease-smooth),
-    color var(--t-quick) var(--ease-smooth);
-}
-
-.tl-tool svg {
-  width: 16px;
-  height: 16px;
-  stroke-width: 1.5;
-}
-
-.tl-tool:hover {
-  background: var(--chip-bg);
-}
-
-.tl-tool[aria-pressed="true"] {
-  background: var(--text);
-  color: var(--bg);
-}
-
-.tl-draw-toggle {
-  display: none;
-}
-
-.tl-draw-toggle + .tl-tool {
-  border-left: 1px solid var(--border);
 }
 
 /* 인트로와 아웃트로: 각각 하나의 멈춤 지점 */
@@ -219,23 +160,37 @@
   font-style: normal;
 }
 
+/* 아래로 이어진다는 표시: 선이 위에서 아래로 흘러내리고, 끝의 화살촉이 그 박자에 맞춰 살짝 내려앉는다 */
 .tl-intro .tl-hint {
+  position: absolute;
+  left: 50%;
+  bottom: var(--sp-4);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--sp-2);
-  max-width: none;
-  margin-top: var(--sp-5);
-  font-size: 13px;
+  width: 14px;
+  margin-left: -7px;
 }
 
 .tl-hint i {
-  display: inline-block;
-  flex: none;
+  display: block;
   width: 1px;
-  height: 32px;
+  height: 48px;
   background: var(--text);
   transform-origin: top;
   animation: tl-drop 1.8s ease-in-out infinite;
+}
+
+.tl-hint svg {
+  display: block;
+  margin-top: 2px;
+  overflow: visible;
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: tl-nudge 1.8s ease-in-out infinite;
 }
 
 @keyframes tl-drop {
@@ -251,6 +206,20 @@
   }
 }
 
+/* 선이 다 내려온 순간(50%)에 화살촉이 밀려 내려갔다가 돌아온다 */
+@keyframes tl-nudge {
+  0%,
+  35%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(5px);
+  }
+}
+
 /* 동작 줄이기: 늘었다 줄었다 하는 대신 밝아졌다 흐려진다 */
 @keyframes tl-pulse {
   0%,
@@ -262,13 +231,13 @@
   }
 }
 
-.tl.reduced .tl-hint i {
+.tl.reduced .tl-hint :is(i, svg) {
   animation-name: tl-pulse;
 }
 
-/* 스크립트가 붙기 전에도 시스템의 "동작 줄이기"를 따른다 */
+/* 스크립트가 붙기 전에도 시스템의 "동작 줄이기"를 따른다. 사이트에서 움직임을 켜 두었으면 그대로 움직인다 */
 @media (prefers-reduced-motion: reduce) {
-  .tl-hint i {
+  :root:not([data-motion="full"]) .tl-hint :is(i, svg) {
     animation-name: tl-pulse;
   }
 }
@@ -483,6 +452,39 @@
   font-weight: 700;
 }
 
+/*
+ * 레일이 그어진다: 선이 위에서 아래로(가로 레일은 왼쪽에서 오른쪽으로) 지나가고,
+ * 선이 닿는 차례(--f, 0–1)대로 눈금이 그어진 뒤 연도가 나타난다. 점은 마지막에 톡 올라온다.
+ */
+.tl.ready .tl-rail .track {
+  transition: transform var(--t-draw) var(--ease-draw);
+}
+
+.tl.ready .tl-rail .tick-mark {
+  transition:
+    background-color var(--t-quick) var(--ease-smooth),
+    transform calc(var(--t-draw) / 2) var(--ease-draw) calc(var(--t-draw) * 0.7 * var(--f, 0));
+}
+
+.tl.ready .tl-rail .tick-label {
+  transition: opacity 0.4s ease calc(var(--t-draw) * 0.7 * var(--f, 0) + var(--t-draw) / 4);
+}
+
+.tl.ready .tl-rail .dot {
+  transition:
+    opacity 0.2s ease var(--t-draw),
+    transform 0.4s var(--ease-pop) var(--t-draw);
+}
+
+.tl.ready .tl-rail:not(.drawn) .tick-label,
+.tl.ready .tl-rail:not(.drawn) .dot {
+  opacity: 0;
+}
+
+.tl.ready .tl-rail:not(.drawn) .dot {
+  transform: scale(0);
+}
+
 /* 넓은 화면: 두 칸 사이 38.2% 분할선 위에 세로로 뒤에 깔린다 */
 .tl-rail-v {
   position: absolute;
@@ -501,6 +503,11 @@
 
 .tl-rail-v .track {
   bottom: 0;
+  transform-origin: top;
+}
+
+.tl.ready .tl-rail-v:not(.drawn) .track {
+  transform: scaleY(0);
 }
 
 .tl-rail-v .fill {
@@ -527,6 +534,11 @@
 .tl-rail-v .tick-mark {
   width: 24px;
   height: 1px;
+  transform-origin: left;
+}
+
+.tl.ready .tl-rail-v:not(.drawn) .tick-mark {
+  transform: scaleX(0);
 }
 
 /* 좁은 화면: 기록 위에 가로로 놓인다 */
@@ -546,6 +558,11 @@
 
 .tl-rail-h .track {
   right: 0;
+  transform-origin: left;
+}
+
+.tl.ready .tl-rail-h:not(.drawn) .track {
+  transform: scaleX(0);
 }
 
 .tl-rail-h .fill {
@@ -573,6 +590,11 @@
 .tl-rail-h .tick-mark {
   width: 1px;
   height: 13px;
+  transform-origin: top;
+}
+
+.tl.ready .tl-rail-h:not(.drawn) .tick-mark {
+  transform: scaleY(0);
 }
 
 /* 좁은 화면의 상단 바 아래에 붙는 진행선 */
@@ -637,9 +659,30 @@
 }
 
 .tl-caption {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
   margin: 0;
   color: var(--text-muted);
   font: 500 12px var(--font-mono);
+}
+
+/* 머리글 앞의 짧은 선: 레일의 눈금과 같은 선이 그해가 화면에 들어올 때 왼쪽에서 오른쪽으로 그어진다 */
+.tl-caption::before {
+  content: "";
+  flex: none;
+  width: 24px;
+  height: 1px;
+  background: currentColor;
+  transform-origin: left;
+}
+
+.tl.ready .tl-caption::before {
+  transition: transform var(--t-draw) var(--ease-draw);
+}
+
+.tl.ready .tl-panel:not(.drawn) .tl-caption::before {
+  transform: scaleX(0);
 }
 
 .tl-paper {
@@ -863,7 +906,27 @@
   stroke-width: 1.5;
 }
 
-/* 동작 줄이기: 위치 이동을 빼고 페이드만 남긴다 */
+/* 동작 줄이기: 위치 이동을 빼고 페이드만 남긴다. 선도 긋지 않고 같은 길이로 흐려 나타난다 */
+.tl.reduced.ready .tl-rail .track,
+.tl.reduced.ready .tl-rail .dot,
+.tl.reduced.ready .tl-caption::before {
+  transition-property: opacity;
+}
+
+.tl.reduced.ready .tl-rail .tick-mark {
+  transition-property: background-color, opacity;
+}
+
+.tl.reduced.ready .tl-rail:not(.drawn) .track,
+.tl.reduced.ready .tl-rail:not(.drawn) .tick-mark,
+.tl.reduced.ready .tl-panel:not(.drawn) .tl-caption::before {
+  opacity: 0;
+}
+
+.tl.reduced.ready .tl-rail:not(.drawn) .track,
+.tl.reduced.ready .tl-rail:not(.drawn) .tick-mark,
+.tl.reduced.ready .tl-rail:not(.drawn) .dot,
+.tl.reduced.ready .tl-panel:not(.drawn) .tl-caption::before,
 .tl.reduced .tl-theme,
 .tl.reduced.ready .tl-card-wrap:not(.in),
 .tl.reduced .tl-secret,
@@ -906,14 +969,6 @@
 
 /* 좁은 화면: 왼쪽 칸은 한 줄짜리 상단 바, 레일은 가로, 기록은 한 줄 목록 */
 @media (max-width: 800px) {
-  .tl-draw-toggle {
-    display: flex;
-  }
-
-  .tl-tools {
-    bottom: calc(var(--sp-3) + 8px);
-  }
-
   .tl-intro,
   .tl-outro {
     min-height: 70vh;

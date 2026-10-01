@@ -8,17 +8,6 @@ type Text = Record<Lang, string>
 
 export type Link = { label: string; href: string }
 
-export const MANIFESTO: { lead: Text; rest: Text } = {
-  lead: {
-    ko: "에이전트가 사람의 의도대로 일하도록,",
-    en: "Designing the boundaries and checks",
-  },
-  rest: {
-    ko: "경계와 검증을 설계합니다.",
-    en: "that let agents work the way people intend.",
-  },
-}
-
 export type Identity = { key: string; label: string; line: Text; href: string }
 
 export const IDENTITIES: Identity[] = [
@@ -48,119 +37,6 @@ export const IDENTITIES: Identity[] = [
       en: "Tools built from the ground up, from a C shell to a Rust package manager.",
     },
     href: "/work#rpm",
-  },
-]
-
-/** 홈의 흐르는 띠. 모두 공개 기록으로 확인할 수 있는 사실이다 */
-export const TICKER: string[] = [
-  "BOOSTCAMP AI TECH · MIT",
-  "OPENAI/CODEX #33593",
-  "SOLIDJS/TEMPLATES #271 · MERGED",
-  "SOLID-CLI × 4 · MERGED",
-  "RPM · RUST · SINCE 2023",
-  "REACT-SOCKET-STORE · NPM",
-  "42 SEOUL · MINISHELL · IRCSERV",
-  "GUESS → VERIFY",
-]
-
-export const ESSAY: {
-  label: Text
-  quote: Text
-  body: Text[]
-  more: Text
-} = {
-  label: { ko: "§ 0.1 — 추측을 검증으로", en: "§ 0.1 — From guess to verification" },
-  quote: {
-    ko: "좋은 에이전트는 똑똑한 에이전트가 아니라, 틀렸을 때의 비용까지 고려한 에이전트다.",
-    en: "A good agent is not the smartest one, but the one that accounts for the cost of being wrong.",
-  },
-  body: [
-    {
-      ko: "에이전트에게 일을 맡긴다는 것은 경계를 긋는 일입니다. 되돌릴 수 있고 확인할 수 있는 일은 에이전트가 바로 하고, 실패 비용이 큰 일은 사람이 쉽게 결정할 수 있도록 정리해서 올립니다. 모르는 것은 스스로 조사하고, 결과를 보고 다시 조율합니다.",
-      en: "Handing work to an agent means drawing a boundary. What can be undone and checked, the agent does right away. What is costly to get wrong goes to a person, framed so the decision is easy. What is unknown gets researched, and the plan is adjusted from the results.",
-    },
-    {
-      ko: "그 경계는 믿음이 아니라 검증으로 긋습니다. 입력과 출력이 분명하고, 무엇을 어떻게 테스트할지 알고, 우회를 막을 수 있는 일만 맡깁니다. 증상에서 원인까지 끝까지 추적하는 습관도 같은 뿌리에서 나왔습니다.",
-      en: "That boundary is drawn with verification, not trust. Only work with clear inputs and outputs, a known way to test it, and guards against shortcuts gets delegated. The habit of chasing a symptom down to its cause comes from the same place.",
-    },
-  ],
-  more: { ko: "About 더 읽기", en: "Continue · About" },
-}
-
-export type IndexCard = {
-  key: string
-  title: Text
-  line: Text
-  href: string
-  /** 카드 그림 이름 (Illustration 컴포넌트) */
-  art: "boundary" | "graph" | "oscillation" | "curve" | "timeline" | "branch"
-  /** 글 수를 셀 섹션 */
-  section?: string
-}
-
-export const INDEX_CARDS: IndexCard[] = [
-  {
-    key: "§ 1",
-    title: { ko: "About", en: "About" },
-    line: {
-      ko: "경계와 검증에 대한 생각, 지나온 길, 일하는 방식.",
-      en: "On boundaries and verification, the path so far, how I work.",
-    },
-    href: "/about",
-    art: "boundary",
-  },
-  {
-    key: "§ 2",
-    title: { ko: "Work", en: "Work" },
-    line: {
-      ko: "대표작 네 개와 오픈소스 기여, 진행 중인 실험.",
-      en: "Four selected works, open-source contributions, experiments.",
-    },
-    href: "/work",
-    art: "graph",
-  },
-  {
-    key: "§ 3",
-    title: { ko: "Devlog", en: "Devlog" },
-    line: {
-      ko: "버그를 추적하며 남긴 조사 기록.",
-      en: "Investigation logs from chasing bugs (in Korean and English).",
-    },
-    href: "/devlog",
-    art: "oscillation",
-    section: "devlog",
-  },
-  {
-    key: "§ 4",
-    title: { ko: "Notes", en: "Notes" },
-    line: {
-      ko: "수학, 리서치, 읽기 노트.",
-      en: "Math, research, and reading notes (in Korean).",
-    },
-    href: "/notes",
-    art: "curve",
-    section: "notes",
-  },
-  {
-    key: "§ 5",
-    title: { ko: "Retrospectives", en: "Retrospectives" },
-    line: {
-      ko: "프로젝트를 마치고 쓴 회고.",
-      en: "Looking back after each project (in Korean).",
-    },
-    href: "/projects",
-    art: "timeline",
-    section: "projects",
-  },
-  {
-    key: "§ 6",
-    title: { ko: "GitHub", en: "GitHub" },
-    line: {
-      ko: "코드와 이슈, 그리고 연락은 여기로.",
-      en: "Code, issues, and the best way to reach me.",
-    },
-    href: "https://github.com/nerdchanii",
-    art: "branch",
   },
 ]
 
@@ -454,7 +330,6 @@ export const HOME: {
   description: Text
   /** {from} {to} {years} {items}을 채운다 */
   summary: Text
-  hint: Text
   short: Text[]
   /** {n}을 채운다 */
   records: Text
@@ -463,8 +338,6 @@ export const HOME: {
   allFound: Text
   outro: Text
   outroLinks: { label: Text; href: string }[]
-  draw: Text
-  erase: Text
   secretFound: Text
   secretHidden: Text
   close: Text
@@ -488,10 +361,6 @@ export const HOME: {
     ko: "{from} – {to} · {years}개의 해 · 기록 {items}개",
     en: "{from} – {to} · {years} years · {items} records",
   },
-  hint: {
-    ko: "스크롤하면 한 해씩 흘러갑니다. 연도를 누르면 그해로 바로 가고, 빈 종이는 눌러서 그려볼 수 있어요.",
-    en: "Scroll and the years flow by. Press a year to go straight to it, or press on the empty paper to draw.",
-  },
   short: [
     {
       ko: "무엇을 맡기고 무엇을 물어야 할지 고민하며 도구를 만듭니다.",
@@ -512,8 +381,6 @@ export const HOME: {
     { label: { ko: "Work", en: "Work" }, href: "/work" },
     { label: { ko: "GitHub", en: "GitHub" }, href: "https://github.com/nerdchanii" },
   ],
-  draw: { ko: "그리기", en: "Draw" },
-  erase: { ko: "지우개", en: "Erase" },
   secretFound: { ko: "년의 숨은 이야기 (발견함)", en: ": hidden story (found)" },
   secretHidden: { ko: "년의 숨은 이야기", en: ": hidden story" },
   close: { ko: "닫기", en: "Close" },

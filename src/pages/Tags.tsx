@@ -7,7 +7,11 @@ export default function Tags() {
   return (
     <>
       <Seo title="Tags" description="태그 목록" path="/tags" />
-      <h1>Tags</h1>
+      <header class="list-head">
+        <p class="eyebrow">§ 3.1 — TAGS</p>
+        <h1>Tags</h1>
+        <p class="page-sub">글에 붙인 태그 {tags.length}개. 옆의 숫자는 글 수입니다.</p>
+      </header>
       <ul class="tag-list tag-cloud">
         <For each={tags}>
           {(tag) => (

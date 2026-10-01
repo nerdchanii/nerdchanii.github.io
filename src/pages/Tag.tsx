@@ -1,4 +1,4 @@
-import { useParams } from "@solidjs/router"
+import { A, useParams } from "@solidjs/router"
 import { Show } from "solid-js"
 import PostList from "../components/PostList.tsx"
 import Seo from "../components/Seo.tsx"
@@ -17,7 +17,13 @@ export default function Tag() {
             description={`#${t.name} 태그가 붙은 글 ${t.entries.length}개`}
             path={`/tags/${t.slug}`}
           />
-          <h1>#{t.name}</h1>
+          <header class="list-head">
+            <p class="eyebrow">§ 3.1 — TAG</p>
+            <h1>#{t.name}</h1>
+            <p class="page-sub">
+              글 {t.entries.length}개. <A href="/tags">태그 전체 →</A>
+            </p>
+          </header>
           <PostList entries={t.entries} />
         </>
       )}
