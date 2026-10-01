@@ -51,8 +51,19 @@
   opacity: 0;
 }
 
+/* 이름표는 선이 거의 다 그어졌을 때 나타난다. 그 때(--after)는 draw.ts가 도형 수로 정한다 */
 .line-room.armed.play .thing-label {
-  animation: ln-fade 0.5s ease 1.6s forwards;
+  animation: ln-fade 0.5s ease var(--after, 1.6s) forwards;
+}
+
+/*
+ * 서버가 그린 그림이 먼저 보였다가 draw.ts가 숨기고 다시 그리면 한 번 깜빡인다.
+ * 스크립트가 있으면(index.html이 data-js를 단다) 준비될 때까지 감춘다.
+ * 스크립트가 끝내 붙지 않아도 그림이 남도록 잠시 뒤에는 그대로 드러낸다.
+ */
+:root[data-js] .line-room:not(.armed) > svg {
+  opacity: 0;
+  animation: ln-fade 0.4s ease 2s forwards;
 }
 
 /* 좁은 화면: 그림이 너무 작아지지 않게 옆으로 넘겨 본다 */

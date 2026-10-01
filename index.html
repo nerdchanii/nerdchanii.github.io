@@ -14,6 +14,8 @@
           theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
         }
         document.documentElement.dataset.theme = theme
+        // 스크립트가 돈다는 표시. 선 그림은 이것을 보고 그려지기 전까지 감춘다 (styles/line-room.css)
+        document.documentElement.dataset.js = ""
         // 글을 읽기 모드(평범한 글)로 보기로 했으면 그대로 연다.
         // 개발 중 확인용: localStorage의 motion이 "full"이면 시스템이 동작 줄이기여도 움직인다 (화면에 버튼은 없다).
         try {
