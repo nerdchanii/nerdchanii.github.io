@@ -44,7 +44,7 @@ const ROW_EM = 1.08
 const FOUND_STORE = "timeline-found"
 const MOBILE = "(max-width: 800px)"
 const NO_DRAW =
-  "a, button, h1, h2, p, b, .note, .tl-quote, .tick, .tl-rail, .tl-mark, .tl-tools, .tl-secret, .tl-counter"
+  "a, button, h1, h2, p, b, .note, .tl-quote, .tick, .tl-rail, .tl-mark, .tl-tools, .tl-secret, .tl-counter, .room"
 
 /** 스프링 위치 (0 → 1). mass 1, stiffness (2π/d)², damping 4π(1 − bounce)/d */
 function springAt(t: number, s: Spring) {

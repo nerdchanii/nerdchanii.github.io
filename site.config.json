@@ -1,0 +1,20 @@
+{
+  "name": "chanii's notes",
+  "url": "https://nerdchanii.github.io",
+  "author": "김예찬",
+  "description": "에이전트가 사람의 의도대로 일하도록, 경계와 검증을 설계합니다.",
+  "ogImage": "/og.png",
+  "links": {
+    "github": "https://github.com/nerdchanii",
+    "linkedin": "https://www.linkedin.com/in/nerdchanii"
+  },
+  "analytics": {
+    "gaTagId": "G-P68QDJ67M0"
+  },
+  "giscus": {
+    "repo": "nerdchanii/nerdchanii.github.io",
+    "repoId": "R_kgDOP1UnAw",
+    "category": "Announcements",
+    "categoryId": "DIC_kwDOP1UnA84CzHKQ"
+  }
+}

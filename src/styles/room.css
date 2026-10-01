@@ -1,0 +1,294 @@
+/*
+ * 홈의 방. 그림은 픽셀아트라 확대해도 번지지 않게 pixelated로 그린다.
+ * 밤(다크 테마)에는 방을 조금 어둡게 하고 창문 타일을 밤 그림으로 바꾼다. 테마는 CSS로만 나눈다.
+ */
+.room {
+  position: relative;
+  margin: 8px 0 40px;
+}
+
+.room-stage {
+  position: relative;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 6px;
+  cursor: grab;
+  /* 한 손가락 세로 스크롤은 브라우저에 두고, 두 손가락 제스처는 방이 받는다 */
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.room-stage.dragging {
+  cursor: grabbing;
+}
+
+.room-world {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  transition: transform 0.08s linear;
+}
+
+.room-tile,
+.room-item img {
+  display: block;
+  image-rendering: pixelated;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.room-tile {
+  position: absolute;
+  max-width: none;
+}
+
+.room-item img {
+  width: 100%;
+  max-width: none;
+  height: auto;
+}
+
+.room-tile.night {
+  display: none;
+}
+
+.room-item {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  transform: translate(-50%, -100%);
+  /* 물건 위에서는 페이지가 스크롤되지 않게 해서 길게 눌러 끌 수 있게 한다 */
+  touch-action: none;
+}
+
+button.room-item {
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    filter 0.15s;
+}
+
+button.room-item:hover,
+button.room-item:focus-visible {
+  transform: translate(-50%, calc(-100% - 4px));
+  filter: brightness(1.05);
+  outline: none;
+}
+
+/* 이름표: 방이 확대돼도 같은 크기로 보이게 배율(--s)로 나눈다 */
+button.room-item[data-label]:hover::after,
+button.room-item[data-label]:focus-visible::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, -6px);
+  white-space: nowrap;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: calc(11px / var(--s, 1));
+  letter-spacing: 0.06em;
+  text-shadow:
+    0 0 3px var(--bg),
+    0 0 3px var(--bg),
+    0 0 3px var(--bg);
+  pointer-events: none;
+}
+
+.room-item.lifted {
+  transition: none;
+  transform: translate(-50%, calc(-100% - 10px));
+  filter: drop-shadow(0 6px 4px rgb(0 0 0 / 0.18));
+  cursor: grabbing;
+}
+
+.room-item.lifted::after {
+  display: none;
+}
+
+.room-target {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.room-target polygon {
+  fill: color-mix(in srgb, var(--accent) 22%, transparent);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.room-target.bad polygon {
+  fill: rgb(200 70 60 / 0.18);
+  stroke: rgb(200 70 60);
+}
+
+.room-panel {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  width: min(340px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  overflow: auto;
+  padding: 14px 16px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 8px 24px rgb(0 0 0 / 0.06);
+  cursor: auto;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.room-panel.right {
+  left: auto;
+  right: 12px;
+}
+
+.room-close {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  padding: 2px 4px;
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.room-panel ol {
+  list-style: none;
+  margin: 10px 0 8px;
+  padding: 0;
+}
+
+.room-panel li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 5px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.room-panel li:first-child {
+  border-top: 0;
+}
+
+.room-panel li a {
+  color: var(--text);
+}
+
+.room-panel li.row {
+  justify-content: flex-start;
+}
+
+.room-panel .meta,
+.room-panel .yr {
+  flex: none;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+}
+
+.room-panel .yr {
+  width: 3.2em;
+  color: var(--text-muted);
+}
+
+.room-panel p {
+  margin: 10px 0 8px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.room-panel .more {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+}
+
+.room-tools {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-top: 10px;
+}
+
+.room-tools button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.room-tools button:hover {
+  color: var(--text);
+}
+
+/* 밤 */
+:root[data-theme="dark"] .room-world {
+  filter: brightness(0.82) saturate(0.92);
+}
+:root[data-theme="dark"] .room-tile.day {
+  display: none;
+}
+:root[data-theme="dark"] .room-tile.night {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .room-world {
+    filter: brightness(0.82) saturate(0.92);
+  }
+  :root:not([data-theme]) .room-tile.day {
+    display: none;
+  }
+  :root:not([data-theme]) .room-tile.night {
+    display: block;
+  }
+}
+
+@media (max-width: 720px) {
+  .room-panel {
+    position: fixed;
+    top: auto;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: 55vh;
+    z-index: 30;
+  }
+
+  .room-panel.right {
+    left: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-world,
+  button.room-item {
+    transition: none;
+  }
+}

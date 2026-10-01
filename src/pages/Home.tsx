@@ -1,3 +1,4 @@
+import Room from "../components/Room.tsx"
 import Seo from "../components/Seo.tsx"
 import Timeline from "../components/Timeline.tsx"
 import { localize, type Lang } from "../lib/i18n.ts"
@@ -12,7 +13,10 @@ export default function Home(props: { lang: Lang }) {
         bilingual
         description={HOME.description[props.lang]}
       />
-      <Timeline lang={props.lang} />
+      <Room lang={props.lang} />
+      <div id="timeline">
+        <Timeline lang={props.lang} />
+      </div>
     </>
   )
 }
