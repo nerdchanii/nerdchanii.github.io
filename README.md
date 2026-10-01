@@ -38,3 +38,22 @@ aliases: [/예전/주소] # 선택. 이 주소로 들어오면 이 글로 보낸
 ```
 
 이 저장소는 public이다. 공개할 글만 커밋한다.
+
+## PR 미리보기
+
+PR을 열면 CI가 빌드 결과를 Cloudflare Pages에 올리고 주소를 PR 댓글로 남긴다
+(`https://pr-<번호>.<프로젝트>.pages.dev`). 같은 PR에 다시 push하면 같은 주소가 갱신된다.
+GitHub Pages는 저장소당 사이트 하나만 두기 때문에 미리보기는 따로 올린다.
+
+처음 한 번만 설정한다. 설정이 없으면 미리보기 단계는 건너뛰고 빌드·검사만 한다.
+
+1. Cloudflare 대시보드 → Workers & Pages → Create → Pages → **Upload assets**로 프로젝트를 만든다
+   (이름은 `nerdchanii-github-io`. 다른 이름이면 저장소 variable `CLOUDFLARE_PAGES_PROJECT`에 적는다).
+2. API 토큰을 만든다: My Profile → API Tokens → Create Token → **Edit Cloudflare Workers** 템플릿,
+   또는 권한을 `Account / Cloudflare Pages / Edit`만 준 커스텀 토큰.
+3. 저장소 Settings → Secrets and variables → Actions에 secret을 넣는다.
+   - `CLOUDFLARE_API_TOKEN`: 위 토큰
+   - `CLOUDFLARE_ACCOUNT_ID`: 대시보드 Workers & Pages 페이지 오른쪽의 Account ID
+
+미리보기 배포에는 Cloudflare가 `X-Robots-Tag: noindex`를 붙이므로 검색에 잡히지 않고,
+Google Analytics는 배포 주소(`site.config.json`의 `url`)에서만 켜지므로 미리보기 방문은 세지 않는다.

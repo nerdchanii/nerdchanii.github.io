@@ -11,6 +11,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  pull-requests: write # PR 미리보기 주소를 댓글로 남긴다
 
 concurrency:
   group: pages-${{ github.ref }}
@@ -19,6 +20,11 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # PR 미리보기는 Cloudflare Pages 비밀값이 있을 때만 올린다.
+      # dependabot·fork PR에는 secret이 넘어오지 않으므로 그때는 빌드·검사만 한다.
+      HAS_PREVIEW_SECRETS: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+      PREVIEW_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT || 'nerdchanii-github-io' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -41,6 +47,52 @@ jobs:
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist
+
+      # PR 미리보기: dist를 Cloudflare Pages에 `pr-<번호>` 브랜치로 올린다.
+      # 주소는 https://pr-<번호>.<프로젝트>.pages.dev 이고, 같은 PR에 다시 push하면 같은 주소가 갱신된다.
+      # 미리보기 배포에는 Cloudflare가 X-Robots-Tag: noindex를 붙여서 검색에 잡히지 않는다.
+      - name: Deploy PR preview
+        id: preview
+        if: github.event_name == 'pull_request' && env.HAS_PREVIEW_SECRETS == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages deploy dist
+            --project-name=${{ env.PREVIEW_PROJECT }}
+            --branch=pr-${{ github.event.number }}
+            --commit-hash=${{ github.event.pull_request.head.sha }}
+            --commit-dirty=true
+      - name: Comment preview URL
+        if: github.event_name == 'pull_request' && env.HAS_PREVIEW_SECRETS == 'true'
+        uses: actions/github-script@v8
+        env:
+          PREVIEW_URL: ${{ steps.preview.outputs.pages-deployment-alias-url || steps.preview.outputs.deployment-url }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          script: |
+            const marker = "<!-- pr-preview -->"
+            const body = [
+              marker,
+              `**미리보기**: ${process.env.PREVIEW_URL}`,
+              "",
+              `커밋 ${process.env.HEAD_SHA.slice(0, 7)} 기준. 이 PR에 push할 때마다 같은 주소가 갱신된다.`,
+            ].join("\n")
+            const { owner, repo } = context.repo
+            const issue_number = context.issue.number
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            })
+            const previous = comments.find((c) => c.body?.startsWith(marker))
+            if (previous) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: previous.id, body })
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body })
+            }
 
   deploy:
     if: github.event_name != 'pull_request'
