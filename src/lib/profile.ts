@@ -312,8 +312,8 @@ export const ABOUT_INTRO: Text[] = [
     en: "I'm Yechan Kim. I build systems where agents work on their own, and stop to ask where a person should decide.",
   },
   {
-    ko: "42서울에서는 C로 셸을, C++로 IRC 서버를 만들며 시스템의 바닥을 익혔습니다. 부스트캠프에서는 RAG와 에이전트를 만들면서, 품질을 가르는 건 모델 바깥의 설계라는 걸 배웠어요. 요즘은 그 둘 사이에서, 에이전트에게 무엇을 맡기고 어디서 사람에게 물을지 정하는 일에 관심이 있습니다.",
-    en: "At 42 Seoul I learned the bottom of the stack by writing a shell in C and an IRC server in C++. At boostcamp, building RAG and agents taught me that the design around the model decides the quality. Now I work on connecting the two: deciding what to hand to an agent and what to give back to a person.",
+    ko: "42서울에서는 C로 셸을, C++로 IRC 서버를 만들면서 프로그램이 운영체제 위에서 어떻게 돌아가는지 익혔습니다. 부스트캠프에서 RAG와 에이전트를 만들어 보니, 결과는 모델보다 그 주변을 어떻게 짜느냐에 달려 있었어요. 지금은 이 두 경험을 이어, 에이전트에게 어디까지 맡기고 어디서 사람에게 물을지 정하는 일을 하고 있습니다.",
+    en: "At 42 Seoul, building a shell in C and an IRC server in C++ taught me how programs actually run on an operating system. At boostcamp, building RAG and agents showed me that results depend less on the model than on how you design around it. Now I bring the two together: deciding how much to hand to an agent and where to ask a person.",
   },
   {
     ko: "버그를 만나면 증상에서 멈추지 않고 원인까지 따라가는 편입니다. 그렇게 찾은 원인은 재현 저장소나 이슈, PR로 남겨서 원래 프로젝트에 보태려고 해요.",
