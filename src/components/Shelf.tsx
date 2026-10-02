@@ -5,11 +5,15 @@ import { arm, play } from "../lib/draw.ts"
 import { abortFlight, flightPhase, flightUrl, pull, reducedMotion, shelve } from "../lib/flight.ts"
 import { spineColor, spineSize } from "../lib/shelf.ts"
 
+/** 선반 한 칸. Writing은 한 해, Notes는 한 주제다. `href`가 있으면 칸 이름이 그곳으로 가는 링크가 된다 */
+export type ShelfRow = { label: string; href?: string; entries: Entry[] }
+
 /**
- * 책장. 선반 한 칸이 한 해, 책 한 권이 글 하나다.
+ * 책장. 선반 한 칸에 책을 꽂고, 책 한 권이 글 하나다.
  * 책은 그 글로 가는 링크라서 스크립트 없이도 눌린다. 스크립트가 있으면 책이 빠져나와 펼쳐진 뒤에 옮겨 간다.
+ * `topics`면 칸 이름이 연도보다 길어서 책을 조금 더 오른쪽부터 꽂는다 (book.css).
  */
-export default function Shelf(props: { years: [string, Entry[]][] }) {
+export default function Shelf(props: { rows: ShelfRow[]; topics?: boolean }) {
   const navigate = useNavigate()
   let root!: HTMLDivElement
 
@@ -44,8 +48,7 @@ export default function Shelf(props: { years: [string, Entry[]][] }) {
   })
 
   /** 앞 선반들에 꽂힌 책 수. 책이 떨어지는 차례를 매길 때 쓴다 */
-  const before = (row: number) =>
-    props.years.slice(0, row).reduce((n, [, list]) => n + list.length, 0)
+  const before = (row: number) => props.rows.slice(0, row).reduce((n, r) => n + r.entries.length, 0)
 
   function open(entry: Entry, e: MouseEvent & { currentTarget: HTMLAnchorElement }) {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0 || reducedMotion())
@@ -66,7 +69,7 @@ export default function Shelf(props: { years: [string, Entry[]][] }) {
   }
 
   return (
-    <div class="shelf" ref={root}>
+    <div class="shelf" classList={{ topics: props.topics }} ref={root}>
       <svg
         class="ln shelf-frame"
         viewBox="0 0 100 100"
@@ -83,12 +86,16 @@ export default function Shelf(props: { years: [string, Entry[]][] }) {
       >
         <path class="soft" d="M0 100 V0 H100 V100" />
       </svg>
-      <For each={props.years}>
-        {([year, list], row) => (
+      <For each={props.rows}>
+        {(shelf, row) => (
           <section class="shelf-row">
-            <h2 class="shelf-year">{year}</h2>
+            <h2 class="shelf-year">
+              <Show when={shelf.href} fallback={shelf.label}>
+                {(href) => <A href={href()}>{shelf.label}</A>}
+              </Show>
+            </h2>
             <div class="shelf-books">
-              <For each={list}>
+              <For each={shelf.entries}>
                 {(entry, i) => {
                   const { w, h } = spineSize(entry)
                   // 책이 많아도 기다리는 시간이 늘어지지 않게 차례에 끝을 둔다

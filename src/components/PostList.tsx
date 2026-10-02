@@ -1,6 +1,6 @@
 import { A } from "@solidjs/router"
 import { For, Show } from "solid-js"
-import type { Entry } from "../lib/content.ts"
+import { SECTION_LABEL, type Entry } from "../lib/content.ts"
 import { formatDate } from "../lib/site.ts"
 import styles from "./PostList.module.css"
 
@@ -14,7 +14,7 @@ export default function PostList(props: { entries: Entry[] }) {
               {entry.title}
             </A>
             <span class={styles.meta}>
-              {entry.section}
+              {SECTION_LABEL[entry.section] ?? entry.section}
               <Show when={entry.date}> · {formatDate(entry.date)}</Show>
             </span>
           </li>

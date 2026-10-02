@@ -468,6 +468,15 @@ a:hover {
   letter-spacing: 0.08em;
 }
 
+/* 주제 이름(/notes)은 그 주제 페이지로 가는 링크다 */
+.year-group h2 a {
+  color: inherit;
+}
+
+.year-group h2 a:hover {
+  color: var(--text);
+}
+
 /* 목차: 좁은 화면에서는 본문 위, 넓은 화면에서는 본문 오른쪽에 고정 */
 .prose .toc {
   margin: 0 0 1.5rem;

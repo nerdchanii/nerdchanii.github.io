@@ -16,6 +16,12 @@
   cursor: pointer;
 }
 
+/* 누르는 자리만 넓히는 보이지 않는 면 (책장 칸 하나가 통째로 링크가 된다) */
+.line-room .hit {
+  fill: transparent;
+  stroke: none;
+}
+
 .line-room .thing-art {
   transition: transform 0.3s var(--ease-pop);
 }

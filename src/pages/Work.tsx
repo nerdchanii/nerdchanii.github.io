@@ -39,7 +39,7 @@ export default function Work(props: { lang: Lang }) {
       />
 
       <header class="page-head">
-        <p class="eyebrow">§ 2 — WORK</p>
+        <p class="eyebrow">§ 1 — WORK</p>
         <h1>{ko() ? "증상에서 결정까지" : "From symptom to decision"}</h1>
         <p class="page-sub">
           {ko()

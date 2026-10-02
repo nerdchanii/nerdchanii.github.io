@@ -7,6 +7,7 @@ export const STATIC_ROUTES = [
   "/en/about",
   "/en/work",
   "/blog",
+  "/notes",
   "/tags",
 ]
 

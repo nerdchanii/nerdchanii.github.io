@@ -45,7 +45,7 @@ export default function About(props: { lang: Lang }) {
 
       <header class="page-head with-cast">
         <div>
-          <p class="eyebrow">§ 1 — ABOUT</p>
+          <p class="eyebrow">§ 4 — ABOUT</p>
           <h1>{ko() ? "김예찬" : "Yechan Kim"}</h1>
           <p class="page-sub">nerdchanii</p>
         </div>

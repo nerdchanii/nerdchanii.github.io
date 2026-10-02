@@ -18,7 +18,7 @@ export default function Tag() {
             path={`/tags/${t.slug}`}
           />
           <header class="list-head">
-            <p class="eyebrow">§ 3.1 — TAG</p>
+            <p class="eyebrow">§ 2.1 — TAG</p>
             <h1>#{t.name}</h1>
             <p class="page-sub">
               글 {t.entries.length}개. <A href="/tags">태그 전체 →</A>

@@ -1,6 +1,6 @@
 import { useNavigate } from "@solidjs/router"
 import { createSignal, For, onCleanup, onMount } from "solid-js"
-import { entries } from "../lib/content.ts"
+import type { Entry } from "../lib/content.ts"
 import { arm, play } from "../lib/draw.ts"
 import { layoutGraph, type Graph } from "../lib/graph.ts"
 import "../styles/note-graph.css"
@@ -10,11 +10,12 @@ import "../styles/note-graph.css"
  *   색 줄 → 같은 폴더의 글을 꿴다, 먹색 호 → 본문에서 건 링크, 옅은 호 → 같은 태그
  * 자리 계산은 lib/graph.ts. 서버가 SVG로 그려 두므로 스크립트 없이도 보이고 눌린다.
  * 넓은 판(세 열)과 좁은 판(한 열)을 함께 그려 두고 CSS가 화면 폭에 맞는 쪽만 보여 준다.
+ * `entries`에는 묶음 이름을 읽을 폴더 index도 함께 넘긴다.
  */
-const WIDE = layoutGraph(entries, 3)
-const TALL = layoutGraph(entries, 1)
-
-export default function NoteGraph() {
+export default function NoteGraph(props: { entries: Entry[] }) {
+  // 난수 없이 자리를 정하므로 서버와 브라우저가 같은 그림을 그린다
+  const wide = layoutGraph(props.entries, 3)
+  const tall = layoutGraph(props.entries, 1)
   const navigate = useNavigate()
   /** 올려 두었거나 초점이 간 글 */
   const [focus, setFocus] = createSignal<string | null>(null)
@@ -116,11 +117,11 @@ export default function NoteGraph() {
     <figure
       class="note-graph"
       classList={{ focused: focus() !== null }}
-      aria-label="글 사이의 연결"
+      aria-label="노트 사이의 연결"
       ref={root}
     >
-      <Board graph={WIDE} class="ng-wide" />
-      <Board graph={TALL} class="ng-tall" />
+      <Board graph={wide} class="ng-wide" />
+      <Board graph={tall} class="ng-tall" />
     </figure>
   )
 }
