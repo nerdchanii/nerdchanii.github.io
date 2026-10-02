@@ -125,7 +125,8 @@ Quartz 시절 URL(예: `/수학정리/미분`)은 마이그레이션할 때 각 
 | `/`, `/en`                   | Home     | 선언문, 세 정체성, 노트 연결 3D 그래프, 흐르는 띠, 목차 카드 |
 | `/about`, `/en/about`        | About    | 소개, 세 가지 축, 일하는 방식, 지나온 길, 연락               |
 | `/work`, `/en/work`          | Work     | 대표작(증상 → 원인 → 결정 → 결과), 오픈소스 기여, 실험       |
-| `/blog`                      | Writing  | 전체 글 (연도별)                                             |
+| `/blog`                      | Writing  | 한 편으로 끝나는 글 (devlog, projects). 연도별 책장          |
+| `/notes`                     | Notes    | 노트 (`notes/**`). 주제별 서가, 노트 사이의 연결             |
 | `/devlog/:slug`, `/notes/**` | Post     | 글 본문 + 목차 + 백링크 + 댓글                               |
 | `/projects/:slug`            | Post     | 프로젝트 회고                                                |
 | `/{섹션}`                    | Section  | 폴더 인덱스 (`index.md` 내용 + 글 목록)                      |

@@ -58,6 +58,26 @@
   letter-spacing: 0.08em;
 }
 
+.shelf-year a {
+  color: inherit;
+}
+
+.shelf-year a:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+/* 주제 칸(/notes): 칸 이름이 연도보다 길다. 두 줄까지 접고, 책은 그만큼 오른쪽부터 꽂는다 */
+.shelf.topics .shelf-year {
+  max-width: 88px;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.shelf.topics .shelf-books {
+  padding-left: 116px;
+}
+
 /* 책은 칸(--cell)마다 바닥에 붙고, 줄이 넘어가면 선반이 한 칸 더 생긴다. 선반 판자는 배경으로 긋는다 */
 .shelf-books {
   display: flex;
@@ -193,9 +213,14 @@
     left: 14px;
   }
 
-  .shelf-books {
+  .shelf-books,
+  .shelf.topics .shelf-books {
     padding-left: 14px;
     padding-right: 14px;
+  }
+
+  .shelf.topics .shelf-year {
+    max-width: none;
   }
 
   .shelf-deco {

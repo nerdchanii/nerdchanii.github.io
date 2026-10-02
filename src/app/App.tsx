@@ -11,6 +11,7 @@ import About from "../pages/About.tsx"
 import Blog from "../pages/Blog.tsx"
 import Home from "../pages/Home.tsx"
 import NotFound from "../pages/NotFound.tsx"
+import Notes from "../pages/Notes.tsx"
 import Post from "../pages/Post.tsx"
 import Tag from "../pages/Tag.tsx"
 import Tags from "../pages/Tags.tsx"
@@ -21,7 +22,7 @@ import "../styles/line.css"
 import "../styles/book.css"
 
 /** 넓은 레이아웃을 쓰는 소개 페이지. 글과 목록은 읽기 좋은 폭을 유지한다 */
-const WIDE = new Set(["/", "/about", "/work", "/blog", "/en", "/en/about", "/en/work"])
+const WIDE = new Set(["/", "/about", "/work", "/blog", "/notes", "/en", "/en/about", "/en/work"])
 
 function Layout(props: RouteSectionProps) {
   // 첫 페이지와 클라이언트 이동마다 page_view를 보낸다. 제목(<Title>)이 바뀐 뒤에 읽도록 한 틱 미룬다.
@@ -118,6 +119,7 @@ export default function App(props: { url?: string }) {
         <Route path="/en/about" component={() => <About lang="en" />} />
         <Route path="/en/work" component={() => <Work lang="en" />} />
         <Route path="/blog" component={Blog} />
+        <Route path="/notes" component={Notes} />
         <Route path="/tags" component={Tags} />
         <Route path="/tags/:tag" component={Tag} />
         <Route path="*" component={ContentRoute} />

@@ -140,7 +140,6 @@ export default function Timeline(props: { lang: Lang }) {
   const years = createMemo(() => DATA.map((y) => yearOf(y, props.lang)))
   const secretYears = createMemo(() => years().filter((y) => y.secret))
   const count = DATA.length
-  const itemCount = DATA.reduce((sum, y) => sum + y.items.length, 0)
   const frac = (i: number) => (count > 1 ? i / (count - 1) : 0)
 
   // 서버가 그린 HTML과 첫 클라이언트 렌더가 같도록, 화면에 따라 달라지는 값은 onMount에서만 바꾼다
@@ -473,7 +472,9 @@ export default function Timeline(props: { lang: Lang }) {
     setReady(true)
   })
 
-  const records = (n: number) => fill(t(HOME.records), { n })
+  // 영어는 한 개일 때 단수로 쓴다 ("1 record")
+  const records = (n: number) =>
+    props.lang === "en" && n === 1 ? "1 record" : fill(t(HOME.records), { n })
 
   function Rail(railProps: { class: string }) {
     return (
@@ -509,14 +510,7 @@ export default function Timeline(props: { lang: Lang }) {
   return (
     <div class="tl" classList={{ ready: ready(), reduced: reduced(), veiled: veiled() }} ref={root}>
       <section class="tl-intro" ref={intro}>
-        <p class="tl-summary">
-          {fill(t(HOME.summary), {
-            from: DATA[0].year,
-            to: DATA[count - 1].year,
-            years: count,
-            items: itemCount,
-          })}
-        </p>
+        <p class="tl-summary">{t(HOME.tagline)}</p>
         <h1>{t(HOME.hello)}</h1>
         <figure class="tl-quote">
           <blockquote lang={HOME.quote.lang}>

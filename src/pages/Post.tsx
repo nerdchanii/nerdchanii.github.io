@@ -5,7 +5,7 @@ import Comments from "../components/Comments.tsx"
 import Seo from "../components/Seo.tsx"
 import PostList from "../components/PostList.tsx"
 import TagList from "../components/TagList.tsx"
-import { backlinks, entries, posts, type Entry } from "../lib/content.ts"
+import { backlinks, entries, NOTES_SECTION, posts, type Entry } from "../lib/content.ts"
 import { abortFlight, dismiss, flightPhase, fold, land, reducedMotion } from "../lib/flight.ts"
 import { spineColor } from "../lib/shelf.ts"
 import { dayOf, formatDate } from "../lib/site.ts"
@@ -41,9 +41,15 @@ export default function Post(props: { entry: Entry }) {
     entries.filter(
       (e) => e.isIndex && isUnder(e.url) && !e.url.slice(entry().url.length + 1).includes("/"),
     )
-  const children = () => posts.filter((p) => isUnder(p.url))
+  // 노트 주제는 쓴 순서대로 읽는다 (시리즈 01, 02 …). 나머지 폴더는 최신 글부터
+  const children = () => {
+    const list = posts.filter((p) => isUnder(p.url))
+    return entry().section === NOTES_SECTION ? [...list].reverse() : list
+  }
   const linkedFrom = () => backlinks(entry().url)
   const wasUpdated = () => entry().updated && dayOf(entry().updated) !== dayOf(entry().date)
+  /** 이 책이 꽂혀 있던 책장. 노트는 Notes, 나머지 글은 Writing */
+  const shelfUrl = () => (entry().section === NOTES_SECTION ? "/notes" : "/blog")
 
   // 맨 위 폴더의 index(/notes 등)는 분류 이름이 곧 제목이라 라벨을 겹쳐 쓰지 않는다
   const sectionLabel = () =>
@@ -105,7 +111,7 @@ export default function Post(props: { entry: Entry }) {
         section: entry().section,
         color: spineColor(entry().url),
       },
-      () => navigate("/blog"),
+      () => navigate(shelfUrl()),
     )
   }
 
@@ -130,8 +136,8 @@ export default function Post(props: { entry: Entry }) {
           <p class="eyebrow post-section">{sectionLabel()}</p>
         </Show>
         <h1>{entry().title}</h1>
-        {/* 날짜가 없는 글(폴더 index 등)에는 빈 줄을 남기지 않는다 */}
-        <Show when={entry().date || wasUpdated()}>
+        {/* 날짜가 없는 글에는 빈 줄을 남기지 않는다. 폴더 index의 git 날짜는 글의 날짜가 아니라서 보이지 않는다 */}
+        <Show when={!entry().isIndex && (entry().date || wasUpdated())}>
           <p class="post-meta">
             <Show when={entry().date}>
               <time datetime={entry().date!}>{formatDate(entry().date)}</time>
@@ -149,7 +155,7 @@ export default function Post(props: { entry: Entry }) {
         <nav class="book-toc" ref={toc} aria-label="목차" />
         <Show when={!entry().isIndex}>
           <p class="book-tools">
-            <A href="/blog" onClick={close}>
+            <A href={shelfUrl()} onClick={close}>
               ← 책장
             </A>
             <button type="button" onClick={togglePostView}>

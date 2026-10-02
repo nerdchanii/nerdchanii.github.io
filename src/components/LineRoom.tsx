@@ -2,7 +2,7 @@ import { useNavigate } from "@solidjs/router"
 import { createUniqueId, For, type JSX, Show } from "solid-js"
 import { years } from "virtual:timeline"
 import { CAST, CAST_SIZE, type CastKind } from "../lib/cast.ts"
-import { posts } from "../lib/content.ts"
+import { notes, posts, writing, type Entry } from "../lib/content.ts"
 import { draw } from "../lib/draw.ts"
 import { localize, type Lang } from "../lib/i18n.ts"
 import { SELECTED_WORKS } from "../lib/profile.ts"
@@ -12,7 +12,8 @@ import "../styles/line-room.css"
 
 /*
  * 홈의 방. 선으로 그린 정면 그림이고, 물건 하나하나가 사이트의 한 곳으로 가는 링크다.
- *   책장 → 글, 게시판 → 아래 타임라인, 책상 → 가장 최근 글, 진열장 → 작업,
+ *   책장 위 칸 → 글(Writing), 책장 아래 칸과 서랍 → 노트(Notes), 게시판 → 아래 타임라인,
+ *   책상 → 가장 최근 글, 진열장 → 작업,
  *   차니 → 소개, 우편함 → GitHub, 명패 → LinkedIn
  * 그림은 1000×330 좌표에 그려서 폭에 맞게 줄어든다. 이름표는 늘 보이고, 올려 두면 물건이 톡 올라온다.
  */
@@ -46,9 +47,6 @@ export default function LineRoom(props: { lang: Lang }) {
   const navigate = useNavigate()
   const t = (text: Text) => text[props.lang]
   const latest = posts[0]
-  // 책장에 꽂는 책: 최근 글부터, 위 칸 다섯 권과 아래 칸 여섯 권
-  const top = posts.slice(0, 5)
-  const bottom = posts.slice(5, 11)
 
   /** 사이트 안 주소는 새로 불러오지 않고 옮긴다 */
   function Thing(p: { href: string; label: string; x: number; y: number; children: JSX.Element }) {
@@ -76,28 +74,30 @@ export default function LineRoom(props: { lang: Lang }) {
     )
   }
 
-  const books = (list: typeof posts, x0: number, floor: number) => {
+  /** 한 칸에 책을 꽂는다. 최근 글부터 x0에서 오른쪽으로, maxX를 넘는 책은 꽂지 않는다 */
+  const books = (list: Entry[], x0: number, floor: number, maxX: number) => {
+    const placed: { entry: Entry; x: number; w: number; h: number }[] = []
     let x = x0
+    for (const [i, entry] of list.entries()) {
+      const w = 12 + Math.min(8, Math.round(Math.sqrt(entry.chars) / 16))
+      if (x + w > maxX) break
+      placed.push({ entry, x, w, h: 40 + ((i * 7) % 4) * 4 })
+      x += w + 2
+    }
     return (
-      <For each={list}>
-        {(entry, i) => {
-          const w = 12 + Math.min(8, Math.round(Math.sqrt(entry.chars) / 16))
-          const h = 40 + ((i() * 7) % 4) * 4
-          const at = x
-          x += w + 2
-          return (
-            <>
-              <rect x={at} y={floor - h} width={w} height={h} class="paper" />
-              <line
-                x1={at + 2}
-                y1={floor - h + 7}
-                x2={at + w - 2}
-                y2={floor - h + 7}
-                style={{ stroke: spineColor(entry.url), "stroke-width": "2.5" }}
-              />
-            </>
-          )
-        }}
+      <For each={placed}>
+        {(b) => (
+          <>
+            <rect x={b.x} y={floor - b.h} width={b.w} height={b.h} class="paper" />
+            <line
+              x1={b.x + 2}
+              y1={floor - b.h + 7}
+              x2={b.x + b.w - 2}
+              y2={floor - b.h + 7}
+              style={{ stroke: spineColor(b.entry.url), "stroke-width": "2.5" }}
+            />
+          </>
+        )}
       </For>
     )
   }
@@ -115,23 +115,33 @@ export default function LineRoom(props: { lang: Lang }) {
         <line class="soft" x1="40" y1="100" x2="144" y2="100" />
         <path class="soft" d="M54 130 C68 108 84 124 92 110 M100 92 c8 -10 20 -6 22 4" />
 
-        {/* 책장 → 글 */}
+        {/* 책장. 틀은 그대로 서 있고, 칸마다 다른 곳으로 간다 */}
+        <rect x="194" y="70" width="170" height="196" class="paper" />
+        <line x1="194" y1="136" x2="364" y2="136" />
+        <line x1="194" y1="202" x2="364" y2="202" />
+
+        {/* 위 칸 → 글 (Writing) */}
         <Thing
           href="/blog"
-          label={t({ ko: `글 ${posts.length}편`, en: `${posts.length} posts` })}
+          label={t({ ko: `글 ${writing.length}편`, en: `${writing.length} posts` })}
           x={279}
           y={58}
         >
-          <rect x="194" y="70" width="170" height="196" class="paper" />
-          <line x1="194" y1="136" x2="364" y2="136" />
-          <line x1="194" y1="202" x2="364" y2="202" />
-          {books(top, 206, 136)}
-          {books(bottom, 206, 202)}
-          <path d="M312 202 L316 178 L342 178 L346 202" />
-          <path
-            class="soft"
-            d="M329 178 C326 164 318 158 310 158 M329 178 C332 162 340 156 348 156"
-          />
+          <rect class="hit" x="194" y="70" width="170" height="66" data-nodraw />
+          {books(writing, 206, 136, 306)}
+          <path d="M312 136 L316 112 L342 112 L346 136" />
+          <path class="soft" d="M329 112 C326 98 318 92 310 92 M329 112 C332 96 340 90 348 90" />
+        </Thing>
+
+        {/* 아래 칸과 서랍 → 노트 (Notes). 서랍에는 노트 종이가 쌓여 있다 */}
+        <Thing
+          href="/notes"
+          label={t({ ko: `노트 ${notes.length}편`, en: `${notes.length} notes` })}
+          x={318}
+          y={240}
+        >
+          <rect class="hit" x="194" y="136" width="170" height="130" data-nodraw />
+          {books(notes, 206, 202, 358)}
           <path class="soft" d="M208 262 h60 M212 254 h52 M208 246 h58" />
         </Thing>
 

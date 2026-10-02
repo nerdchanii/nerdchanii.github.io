@@ -1,5 +1,5 @@
 /*
- * 글 사이의 연결 (/blog). 그림의 약속은 line.css, 자리 계산은 lib/graph.ts.
+ * 노트 사이의 연결 (/notes). 그림의 약속은 line.css, 자리 계산은 lib/graph.ts.
  * 점은 글로 가는 링크다. 올려 두거나 초점이 가면 그 글과 이어진 선·글만 진하게 남는다.
  */
 .note-links {
