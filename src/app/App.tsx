@@ -20,6 +20,7 @@ import "katex/dist/katex.min.css"
 import "../styles/global.css"
 import "../styles/line.css"
 import "../styles/book.css"
+import "../styles/daily-ai.css"
 
 /** 넓은 레이아웃을 쓰는 소개 페이지. 글과 목록은 읽기 좋은 폭을 유지한다 */
 const WIDE = new Set(["/", "/about", "/work", "/blog", "/notes", "/en", "/en/about", "/en/work"])

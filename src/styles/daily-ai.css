@@ -1,0 +1,631 @@
+/*
+ * Daily AI 회차의 부품 (src/components/daily/).
+ * 사이트의 약속을 그대로 따른다: 면을 칠하지 않고 선과 모노 라벨로 위계를 만든다. 색은 픽셀 그림과 링크 색뿐이다.
+ * 바탕·글자·선 색은 global.css의 토큰을 쓰고, 이 연재에만 필요한 색은 아래에 역할 이름으로 둔다.
+ * 클래스는 모두 `da-`로 시작해서 사이트의 다른 클래스(.cards, .card 등)와 겹치지 않는다.
+ */
+:root {
+  /* 정답과 오답 */
+  --da-positive: #2e7d4f;
+  --da-negative: #b8433a;
+  /* 바탕에 섞어 만드는 옅은 색 */
+  --da-positive-soft: color-mix(in srgb, var(--da-positive) 14%, var(--bg));
+  --da-negative-soft: color-mix(in srgb, var(--da-negative) 14%, var(--bg));
+  --da-highlight: color-mix(in srgb, var(--accent) 26%, var(--bg));
+  /* 그림 외곽선. 어두운 바탕에서 검은 옷과 검은 구슬이 묻히지 않게 한다 */
+  --da-sticker: rgb(255 255 255 / 0);
+}
+
+:root[data-theme="dark"] {
+  --da-positive: #7ee2a8;
+  --da-negative: #ff9c96;
+  --da-sticker: #ededed;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --da-positive: #7ee2a8;
+    --da-negative: #ff9c96;
+    --da-sticker: #ededed;
+  }
+}
+
+/* 모노 라벨 */
+.da-hook-bubble b,
+.da-scene-bot b,
+.da-flow-when,
+.da-diff small,
+.da-refs b,
+.da-core::before {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* 그림 */
+.prose img.da-sprite {
+  display: block;
+  width: auto;
+  max-width: none;
+  filter: drop-shadow(1.5px 0 0 var(--da-sticker)) drop-shadow(-1.5px 0 0 var(--da-sticker))
+    drop-shadow(0 1.5px 0 var(--da-sticker)) drop-shadow(0 -1.5px 0 var(--da-sticker));
+}
+
+/* 오늘의 핵심 */
+.da-core {
+  margin: 1rem 0 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1.2px solid var(--text);
+}
+
+.da-core::before {
+  content: "today";
+  color: var(--text-muted);
+}
+
+.da-core ol {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.da-core li + li {
+  margin-top: 0.375rem;
+}
+
+/* 표지 장면 */
+.da-scene {
+  margin: 1.5rem 0;
+}
+
+.da-scene-stage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  padding: 1.375rem 1.25rem 0.875rem;
+  border: 1.2px solid var(--text);
+}
+
+.da-scene-us,
+.da-scene-bots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.625rem 0.875rem;
+}
+
+.da-scene-bot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.da-scene figcaption {
+  margin-top: 0.625rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+/* 말풍선 */
+.da-hook {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.875rem;
+  align-items: end;
+  margin: 1rem 0;
+}
+
+.da-hook-sprites {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.375rem;
+}
+
+.da-hook-bubble {
+  position: relative;
+  padding: 0.75rem 1rem;
+  border: 1.2px solid var(--text);
+  border-radius: 2px;
+  background: var(--surface);
+}
+
+.da-hook-bubble::before {
+  content: "";
+  position: absolute;
+  bottom: 22px;
+  left: -8px;
+  width: 14px;
+  height: 14px;
+  border-bottom: 1.2px solid var(--text);
+  border-left: 1.2px solid var(--text);
+  background: var(--surface);
+  transform: rotate(45deg);
+}
+
+.da-hook-bubble b {
+  color: var(--accent);
+}
+
+.da-hook-text {
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.da-hook-text p {
+  margin: 0;
+}
+
+.da-hook-right {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.da-hook-right .da-hook-sprites {
+  order: 2;
+}
+
+.da-hook-right .da-hook-bubble::before {
+  right: -8px;
+  left: auto;
+  border-top: 1.2px solid var(--text);
+  border-right: 1.2px solid var(--text);
+  border-bottom: 0;
+  border-left: 0;
+}
+
+/* 곁다리 한마디: 말풍선을 글 길이만큼만 줄인다 */
+.da-hook-compact {
+  gap: 0.625rem;
+}
+
+.da-hook-compact .da-hook-bubble {
+  justify-self: start;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.da-hook-compact.da-hook-right .da-hook-bubble {
+  justify-self: end;
+}
+
+.da-hook-compact .da-hook-bubble::before {
+  bottom: 12px;
+  width: 10px;
+  height: 10px;
+}
+
+/* 무엇이 달라지나 */
+.da-diff {
+  margin: 1.25rem 0;
+  padding: 0.875rem;
+  border: 1.2px solid var(--line);
+}
+
+.da-diff-title {
+  margin: 0 0 0.625rem;
+  font-weight: 700;
+}
+
+.da-diff-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.da-diff-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.da-diff small {
+  color: var(--text-muted);
+}
+
+.da-diff-was {
+  background: var(--code-bg);
+  color: var(--text-muted);
+}
+
+.da-diff-now {
+  border: 1.2px solid var(--da-positive);
+  background: var(--da-positive-soft);
+  font-weight: 700;
+}
+
+.da-diff-arrow {
+  justify-self: center;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 560px) {
+  .da-diff-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .da-diff-arrow {
+    transform: rotate(90deg);
+  }
+}
+
+/* 시간 순서 */
+.prose ol.da-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.25rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.da-flow li {
+  display: flex;
+  flex: 1 1 150px;
+  flex-direction: column;
+  padding: 0.625rem 0.75rem;
+  border: 1.2px solid var(--text);
+}
+
+.da-flow-when {
+  color: var(--text-muted);
+}
+
+.da-flow li span:last-child {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* 비교 표: 첫 열(항목 이름)은 줄을 바꾸지 않는다 */
+.da-table td:first-child {
+  white-space: nowrap;
+}
+
+/* 나란한 항목 */
+.da-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+}
+
+.da-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.875rem 1rem;
+  border: 1.2px solid var(--line);
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+
+.da-card p {
+  margin: 0;
+}
+
+/* 가장 중요한 문장 */
+.da-key {
+  position: relative;
+  margin: 1.25rem 0;
+  padding-left: 1.875rem;
+  font-weight: 700;
+}
+
+.da-key::before {
+  content: "★";
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--accent);
+  font-size: 1.25rem;
+  line-height: 1.4;
+}
+
+.da-key p {
+  margin: 0;
+}
+
+/* 형광펜 */
+.prose mark.da-hl {
+  padding: 0 2px;
+  background: linear-gradient(var(--da-highlight), var(--da-highlight)) no-repeat 0 88% / 100% 42%;
+  color: inherit;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* 글쓴이의 읽기 */
+.da-note {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--accent);
+  border-radius: 2px;
+  background: var(--code-bg);
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.da-note p {
+  margin: 0;
+}
+
+/* 인용 카드 */
+.da-quotes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.625rem;
+  margin: 1.25rem 0;
+}
+
+.da-quote {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.75rem 0.875rem;
+  border: 1.2px solid var(--text);
+}
+
+.da-quote .da-sprite {
+  align-self: flex-start;
+}
+
+.da-quote q {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  quotes: "“" "”";
+}
+
+/* 직접 인용은 줄마다 형광펜을 칠한다 */
+.da-quote q span {
+  padding: 0 2px;
+  background: linear-gradient(var(--da-highlight), var(--da-highlight)) no-repeat 0 88% / 100% 42%;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.da-quote-read {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.da-quote-read p {
+  margin: 0;
+}
+
+/* 출처 줄 */
+.da-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  align-items: baseline;
+  margin: 1rem 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.da-refs b {
+  text-transform: none;
+}
+
+.da-refs p {
+  display: contents;
+}
+
+.da-refs a {
+  padding: 0 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--code-bg);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.da-refs a::after {
+  content: " ↗";
+}
+
+/* 오늘의 세 줄: 빈칸 */
+.da-blank {
+  min-width: 84px;
+  min-height: 1.75em;
+  padding: 0 0.75rem;
+  border: 1.2px dashed var(--text-muted);
+  border-radius: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.da-blank:hover:not(:disabled) {
+  border-color: var(--text);
+  background: var(--code-bg);
+}
+
+.da-blank-open {
+  border-style: solid;
+  border-color: var(--da-positive);
+  background: var(--da-positive-soft);
+  cursor: default;
+}
+
+/* 오늘의 문제 */
+.da-quiz {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  margin: 1.25rem 0;
+  padding: 1.375rem;
+  border: 1.2px solid var(--text);
+}
+
+.da-q {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.da-q legend {
+  margin-bottom: 0.625rem;
+  padding: 0;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.da-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.da-optwrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.da-opt {
+  padding: 0.625rem 0.875rem;
+  border: 1.2px solid var(--line);
+  border-radius: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  line-height: 1.55;
+  text-align: left;
+  cursor: pointer;
+}
+
+.da-opt:hover:not(:disabled) {
+  border-color: var(--text);
+  background: var(--code-bg);
+}
+
+.da-opt:disabled {
+  cursor: default;
+}
+
+.da-opt-right {
+  border-color: var(--da-positive);
+  background: var(--da-positive-soft);
+}
+
+.da-opt-wrong {
+  border-color: var(--da-negative);
+  background: var(--da-negative-soft);
+}
+
+.da-opt-tag {
+  margin-left: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.da-opt-right .da-opt-tag {
+  color: var(--da-positive);
+}
+
+.da-opt-wrong .da-opt-tag {
+  color: var(--da-negative);
+}
+
+.prose p.da-why {
+  margin: 0 0 0 2px;
+  padding: 2px 0.875rem 6px;
+  border-left: 3px solid var(--line);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+.prose p.da-why-right {
+  border-left-color: var(--da-positive);
+  color: var(--text);
+}
+
+.prose p.da-why-picked {
+  border-left-color: var(--da-negative);
+  color: var(--text);
+}
+
+.prose p.da-score {
+  margin: 0;
+  font-weight: 700;
+}
+
+.da-cheer {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.da-cheer p {
+  margin: 0;
+}
+
+/* 도장 */
+.da-finish {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.875rem;
+  align-items: center;
+  margin: 1.5rem 0;
+  padding: 0.875rem;
+  border: 1.2px dashed var(--line);
+}
+
+.prose .da-finish img.da-sprite {
+  opacity: 0.55;
+  filter: grayscale(1);
+}
+
+.da-finish strong {
+  color: var(--text-muted);
+}
+
+.da-finish p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.da-finish-done {
+  border: 1.2px solid var(--da-positive);
+  background: var(--da-positive-soft);
+}
+
+.prose .da-finish-done img.da-sprite {
+  opacity: 1;
+  filter: drop-shadow(1.5px 0 0 var(--da-sticker)) drop-shadow(-1.5px 0 0 var(--da-sticker))
+    drop-shadow(0 1.5px 0 var(--da-sticker)) drop-shadow(0 -1.5px 0 var(--da-sticker));
+}
+
+.da-finish-done strong {
+  color: var(--text);
+}
+
+/* 맨 아래 알림 */
+.prose p.da-fine {
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
