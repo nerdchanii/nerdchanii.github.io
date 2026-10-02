@@ -110,7 +110,7 @@ export default function About(props: { lang: Lang }) {
         <div class="split-body">
           <p>
             {ko()
-              ? "이슈, PR, 협업 제안 모두 GitHub로 편하게 연락 주세요."
+              ? "이슈든 PR이든 협업 제안이든, GitHub로 편하게 연락 주세요."
               : "Issues, PRs, or collaboration ideas — reach me on GitHub."}
           </p>
           <p class="link-row">

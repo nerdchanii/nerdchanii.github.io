@@ -164,17 +164,17 @@ years:
           desc: Derivatives, eigendecomposition, PCA, Debugging Teams.
 
   - year: 2026
-    theme: 에이전트와 원인 추적의 해
-    secret: 이 홈페이지는 Vite와 Solid로 직접 만든 정적 사이트 위에서 돌아갑니다.
+    theme: 에이전트를 만들고 원인을 쫓은 해
+    secret: 이 사이트는 Vite와 Solid로 직접 만들었습니다.
     en:
       theme: The year of agents and root causes
-      secret: This site runs on a static site I built myself with Vite and Solid.
+      secret: I built this site myself with Vite and Solid.
     items:
       - kind: 부스트캠프
         title: MIT
         desc: 회의 기록을 다루는 에이전트. 에이전트 파트를 맡았습니다.
         href: https://github.com/boostcampaitech8/pro-nlp-finalproject-nlp-14
-        preview: 데이터를 바꾸는 도구 호출에만 사람의 승인을 두고, 매번 시간을 묻던 툴 호출은 시스템 프롬프트에 현재 시각을 넣어 없앴습니다.
+        preview: 데이터를 바꾸는 도구 호출에만 사람의 승인을 두었고, 매번 현재 시각을 묻던 도구 호출은 시스템 프롬프트에 시각을 넣어 없앴습니다.
         en:
           kind: Boostcamp
           desc: An agent that works with meeting records. I owned the agent part.
@@ -183,7 +183,7 @@ years:
         title: SolidJS PR 5개 병합
         desc: solid-cli와 templates.
         href: https://github.com/solidjs/templates/pull/271
-        preview: 동시 SSR 요청 사이에 라우터 상태가 새는 문제를 재현 저장소로 보이고, 요청마다 라우터를 만드는 수정이 병합됐습니다.
+        preview: 동시에 들어온 SSR 요청끼리 라우터 상태가 섞이는 문제를 재현 저장소로 보여 주었고, 요청마다 라우터를 새로 만드는 수정이 병합됐습니다.
         en:
           kind: Open source
           title: 5 SolidJS PRs merged
